@@ -1,0 +1,1 @@
+ALTER TYPE "public"."token_purpose" ADD VALUE 'GUEST_BOOKING_ACCESS';

@@ -1,0 +1,58 @@
+{
+  "name": "anzcpdweb",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
+    "email:process": "tsx scripts/process-email-outbox.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1000.0",
+    "@better-auth/drizzle-adapter": "1.7.5",
+    "@date-fns/tz": "1.5.0",
+    "better-auth": "1.7.5",
+    "clsx": "2.1.1",
+    "dotenv": "16.6.1",
+    "drizzle-orm": "0.45.2",
+    "gsap": "3.15.0",
+    "next": "16.3.5",
+    "postgres": "3.4.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "resend": "6.0.2",
+    "stripe": "22.6.2",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "26.6.2",
+    "@types/react": "19.2.16",
+    "@types/react-dom": "19.2.3",
+    "drizzle-kit": "0.31.4",
+    "eslint": "9.37.0",
+    "eslint-config-next": "16.3.5",
+    "playwright": "1.63.0",
+    "postcss": "8.5.6",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.20.6",
+    "typescript": "6.0.3",
+    "vitest": "5.0.1"
+  },
+  "engines": {
+    "node": ">=20.9.0",
+    "pnpm": ">=12.0.0"
+  },
+  "packageManager": "pnpm@12.4.1"
+}

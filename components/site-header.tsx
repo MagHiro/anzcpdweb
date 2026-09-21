@@ -1,0 +1,42 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { CloseIcon, Mail, MenuIcon, Phone } from "@/components/icon";
+import { cn } from "@/lib/utils";
+
+const navigation = [
+  { href: "/courses", label: "CPD activities" },
+  { href: "/cpd-requirements", label: "Requirements" },
+  { href: "/presenters", label: "Presenters" },
+];
+
+export function SiteHeader() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <header className="relative z-30 bg-[#fbfaf6]">
+      <div className="hidden border-b border-[#d9e0db] bg-[var(--forest)] text-[#dce8e1] sm:block">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-2 text-[11px] font-semibold tracking-[.04em] sm:px-8 lg:px-12">
+          <p>AU &amp; NZ Migration Academy <span className="mx-2 text-[#86ae9d]">•</span> CPD for migration professionals</p>
+          <div className="flex items-center gap-5 text-[#c8dcd3]"><a className="inline-flex items-center gap-1.5 hover:text-white" href="tel:+61283808833"><Phone size={13} /> +61 2 8380 8833</a><a className="inline-flex items-center gap-1.5 hover:text-white" href="mailto:info@anzmigrationacademy.com"><Mail size={13} /> info@anzmigrationacademy.com</a></div>
+        </div>
+      </div>
+      <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center justify-between gap-6 px-5 sm:px-8 lg:px-12">
+        <Link href="/" className="focus-ring group flex items-center gap-3" onClick={() => setOpen(false)}>
+          <span className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[var(--forest)] text-[13px] font-black tracking-[-.1em] text-[var(--forest)] transition group-hover:bg-[var(--forest)] group-hover:text-white"><span>ANZ</span><span className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#e87954]" /></span>
+          <span className="leading-none"><span className="block text-[15px] font-extrabold tracking-[.08em] text-[var(--forest)]">ANZ MIGRATION</span><span className="mt-1 block text-[10px] font-bold uppercase tracking-[.22em] text-[var(--muted)]">Academy · CPD</span></span>
+        </Link>
+        <button type="button" aria-expanded={open} aria-controls="site-navigation" aria-label={open ? "Close menu" : "Open menu"} className="focus-ring flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] text-[var(--forest)] md:hidden" onClick={() => setOpen((value) => !value)}>{open ? <CloseIcon /> : <MenuIcon />}</button>
+        <nav id="site-navigation" className={cn("items-center gap-7 text-sm font-semibold text-[var(--muted)] md:flex", open ? "absolute inset-x-5 top-[calc(100%+1px)] flex flex-col items-stretch gap-1 rounded-b-2xl border border-t-0 border-[var(--line)] bg-[#fbfaf6] p-4 shadow-[0_18px_45px_rgba(23,60,55,.12)] md:static md:flex-row md:items-center md:border-0 md:bg-transparent md:p-0 md:shadow-none" : "hidden")}>
+          {navigation.map((item) => <Link key={item.href} className="focus-ring rounded-lg px-3 py-3 hover:text-[var(--forest)] md:py-2" href={item.href} onClick={() => setOpen(false)}>{item.label}</Link>)}
+          <Link className="focus-ring mt-2 rounded-full bg-[var(--forest)] px-5 py-3 text-center text-white transition hover:bg-[var(--fern)] md:mt-0 md:py-2.5" href="/register" onClick={() => setOpen(false)}>Register / sign in</Link>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+export function SiteFooter() {
+  return <footer className="border-t border-[#31574e] bg-[var(--forest)] text-[#dce8e1]"><div className="mx-auto grid max-w-[1440px] gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[1.45fr_1fr_1fr] lg:px-12"><div><Link href="/" className="inline-flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#8caf9f] text-[12px] font-black tracking-[-.1em] text-white">ANZ</span><span className="text-sm font-extrabold tracking-[.1em] text-white">ANZ MIGRATION ACADEMY</span></Link><p className="mt-5 max-w-sm text-sm leading-6 text-[#a9c2b7]">Practical continuing professional development for migration professionals working across Australia and New Zealand.</p><div className="mt-7 grid gap-2 text-xs text-[#a9c2b7]"><p className="font-bold tracking-[.12em] text-[#dce8e1]">BUSINESS DETAILS</p><p>Company: AU &amp; NZ Migration Academy</p><p>Trading as: ANZ Migration Academy</p><p>ABN: 19 700 088 526</p><a className="inline-flex items-center gap-2 hover:text-white" href="tel:+61283808833"><Phone size={14} /> +61 2 8380 8833</a><a className="inline-flex items-center gap-2 hover:text-white" href="mailto:info@anzmigrationacademy.com"><Mail size={14} /> info@anzmigrationacademy.com</a></div></div><div><p className="eyebrow text-[#a9c2b7]">Explore</p><div className="mt-5 grid gap-3 text-sm"><Link href="/courses" className="hover:text-white">CPD activities</Link><Link href="/cpd-requirements" className="hover:text-white">CPD requirements</Link><Link href="/presenters" className="hover:text-white">Meet the presenters</Link><Link href="/classes" className="hover:text-white">Live booking catalogue</Link></div></div><div><p className="eyebrow text-[#a9c2b7]">Useful information</p><div className="mt-5 grid gap-3 text-sm"><Link href="/register" className="hover:text-white">Register / sign in</Link><Link href="/privacy" className="hover:text-white">Privacy</Link><Link href="/terms" className="hover:text-white">Terms</Link><Link href="/refund-policy" className="hover:text-white">Refund policy</Link></div></div></div><div className="mx-auto max-w-[1440px] border-t border-[#31574e] px-5 py-5 text-xs text-[#a9c2b7] sm:px-8 lg:px-12">© {new Date().getFullYear()} AU &amp; NZ Migration Academy. Trading as ANZ Migration Academy. Course information is educational material and should be checked against current professional requirements.</div></footer>;
+}
