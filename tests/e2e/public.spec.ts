@@ -13,10 +13,11 @@ test.describe("database-backed journeys", () => {
 
   test("guest booking validates attendee details before Stripe Checkout", async ({ page }) => {
     await page.goto("/classes");
-    await page.getByRole("link", { name: "View class" }).first().click();
+    await page.getByRole("link", { name: "View details" }).first().click();
     await page.getByRole("link", { name: "Book this class" }).click();
-    await page.getByRole("button", { name: /Continue to secure payment/ }).click();
-    await expect(page.getByText("Review the highlighted fields before continuing.")).toBeVisible();
+    await page.getByRole("button", { name: "Review booking" }).click();
+    expect(await page.getByLabel(/^Full name/).evaluate((element: HTMLInputElement) => element.validity.valueMissing)).toBe(true);
+    await expect(page.getByRole("button", { name: /Continue to secure payment/ })).toHaveCount(0);
   });
 
   test("customer cannot access another booking by changing the URL", async ({ page }) => {

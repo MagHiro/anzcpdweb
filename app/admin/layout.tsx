@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminSessionOrNull } from "@/server/auth/session";
-import { Container } from "@/components/ui";
-import { SignOutButton } from "@/components/auth-form";
-
+import { Workspace } from "@/components/workspace";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
-
-export default async function AdminLayout({ children }: { children: React.ReactNode }) { const session = await getAdminSessionOrNull(); if (!session) redirect("/sign-in?next=/admin"); return <div className="min-h-[75vh] bg-[#e8efeb]"><Container className="grid gap-8 py-8 lg:grid-cols-[245px_1fr] lg:py-12"><aside className="rounded-[1.35rem] border border-[#31574e] bg-[var(--forest)] p-4 text-[#dce8e1] shadow-[0_18px_60px_rgba(18,36,31,.12)] lg:sticky lg:top-28 lg:h-fit"><Link href="/admin" className="block px-3 text-sm font-bold tracking-[.08em] text-white">ANZ CPD <span className="text-[var(--signal)]">/</span> Admin</Link><p className="mt-2 px-3 text-xs text-[#a9c2b7]">Operational workspace</p><nav className="mt-7 grid gap-1 text-sm"><Link href="/admin" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Overview</Link><Link href="/admin/classes" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Classes</Link><Link href="/admin/categories" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Categories</Link><Link href="/admin/presenters" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Presenters</Link><Link href="/admin/source-references" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Source references</Link><Link href="/admin/bookings" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Bookings</Link><Link href="/admin/customers" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Customers</Link><Link href="/admin/payments" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Payments</Link><Link href="/admin/refunds" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Refunds</Link><Link href="/admin/audit-log" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Audit log</Link><Link href="/admin/settings" className="focus-ring rounded-lg px-3 py-2.5 hover:bg-[#2b5a50] hover:text-white">Settings</Link><div className="mt-4 border-t border-[#35574f] px-3 pt-4"><SignOutButton /></div></nav></aside><div className="min-w-0">{children}</div></Container></div>; }
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await getAdminSessionOrNull();
+  if (!session) redirect("/sign-in?next=/admin");
+  return <Workspace admin name={session.user.name}>{children}</Workspace>;
+}

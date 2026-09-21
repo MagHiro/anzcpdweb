@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Google_Sans_Flex } from "next/font/google";
-import { SiteFooter } from "@/components/site-header";
-import { SiteHeader } from "@/components/site-header";
+import { AppChrome } from "@/components/app-chrome";
 import "./globals.css";
 
 const googleSansFlex = Google_Sans_Flex({
@@ -20,5 +19,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en-AU" className={googleSansFlex.className} data-scroll-behavior="smooth"><body><SiteHeader /><main>{children}</main><SiteFooter /></body></html>;
+  return <html lang="en-AU" className={googleSansFlex.className} data-scroll-behavior="smooth"><body><AppChrome>{children}</AppChrome></body></html>;
 }

@@ -1,0 +1,3 @@
+export function WorkspaceLoading() {
+  return <div role="status" aria-label="Loading workspace" className="animate-pulse space-y-6"><span className="sr-only">Loading your workspace…</span><div className="h-8 w-56 rounded-lg bg-[var(--line)]" /><div className="h-4 max-w-md rounded bg-[var(--line)]" /><div className="grid gap-4 sm:grid-cols-3">{[0, 1, 2].map(i => <div key={i} className="h-28 rounded-xl border border-[var(--line)] bg-white" />)}</div><div className="space-y-4 rounded-xl border border-[var(--line)] bg-white p-6">{[0, 1, 2, 3].map(i => <div key={i} className="h-10 rounded bg-[var(--mist)]" />)}</div></div>;
+}
