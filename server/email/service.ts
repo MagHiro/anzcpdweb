@@ -1,8 +1,11 @@
 import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 import { and, asc, eq, lte, lt, or } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { getServerEnv } from "@/lib/env";
+import { getServerEnv, resolveEmailProvider, type ServerEnv } from "@/lib/env";
 import { emailOutbox } from "@/db/schema";
+
+let smtpTransporter: Transporter | undefined;
 
 export type EmailMessage =
   | {
@@ -63,6 +66,26 @@ function maskEmail(email: string): string {
   const [localPart, domain] = email.split("@", 2);
   if (!localPart || !domain) return "[masked]";
   return `${localPart.slice(0, 1)}***@${domain}`;
+}
+
+function getSmtpTransporter(env: ServerEnv): Transporter {
+  if (!env.SMTP_HOST) throw new Error("SMTP_HOST is not configured");
+  const hasUser = Boolean(env.SMTP_USER);
+  const hasPassword = Boolean(env.SMTP_PASSWORD);
+  if (hasUser !== hasPassword) throw new Error("SMTP_USER and SMTP_PASSWORD must be configured together");
+  if (!smtpTransporter) {
+    smtpTransporter = nodemailer.createTransport({
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      secure: env.SMTP_SECURE === "true",
+      requireTLS: env.SMTP_REQUIRE_TLS === "true",
+      auth: hasUser && hasPassword ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD } : undefined,
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 30_000,
+    });
+  }
+  return smtpTransporter;
 }
 
 export async function queueEmail(message: EmailMessage, dedupeKey?: string): Promise<void> {
@@ -135,21 +158,40 @@ function renderMessage(message: EmailMessage): { subject: string; html: string; 
 async function deliver(message: EmailMessage): Promise<void> {
   const env = getServerEnv();
   const rendered = renderMessage(message);
-  if (!env.RESEND_API_KEY) {
-    if (env.NODE_ENV === "production") throw new Error("Transactional email is not configured");
-    console.info("[email:development]", { to: maskEmail(message.email), subject: rendered.subject });
+  const provider = resolveEmailProvider(env);
+
+  if (provider === "smtp") {
+    await getSmtpTransporter(env).sendMail({
+      from: env.EMAIL_FROM,
+      to: message.email,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+    });
     return;
   }
 
-  const resend = new Resend(env.RESEND_API_KEY);
-  const result = await resend.emails.send({
-    from: env.EMAIL_FROM,
-    to: [message.email],
-    subject: rendered.subject,
-    html: rendered.html,
-    text: rendered.text,
-  });
-  if (result.error) throw new Error(`Email provider rejected the message: ${result.error.message}`);
+  if (provider === "resend") {
+    if (!env.RESEND_API_KEY) {
+      if (env.NODE_ENV === "production") throw new Error("RESEND_API_KEY is not configured");
+      console.info("[email:development]", { to: maskEmail(message.email), subject: rendered.subject });
+      return;
+    }
+
+    const resend = new Resend(env.RESEND_API_KEY);
+    const result = await resend.emails.send({
+      from: env.EMAIL_FROM,
+      to: [message.email],
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+    });
+    if (result.error) throw new Error(`Email provider rejected the message: ${result.error.message}`);
+    return;
+  }
+
+  if (env.NODE_ENV === "production") throw new Error("Transactional email is not configured; set SMTP_HOST or RESEND_API_KEY");
+  console.info("[email:development]", { to: maskEmail(message.email), subject: rendered.subject });
 }
 
 export async function processEmailOutbox(limit = 20): Promise<{ sent: number; failed: number }> {

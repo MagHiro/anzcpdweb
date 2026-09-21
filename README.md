@@ -12,8 +12,8 @@ The initial seed data is deliberately unpublished. It uses professional immigrat
 - Stripe Checkout, signed webhooks, persisted webhook idempotency and Stripe refunds
 - Cloudflare Turnstile Siteverify validation plus database-backed application rate limits
 - Tailwind CSS, GSAP with ScrollTrigger and reduced-motion handling
-- Resend-compatible email provider behind an outbox/retry abstraction
-- Cloudflare R2-compatible object storage with a safe local filesystem adapter for development
+- Resend or SMTP email delivery behind an outbox/retry abstraction
+- Validated class media uploads stored in `public/assets`
 - Vitest unit/integration tests and Playwright critical-path browser tests
 
 ## Architecture and decisions
@@ -104,13 +104,13 @@ Critical booking/webhook handlers enqueue messages in `email_outbox` rather than
 pnpm email:process
 ```
 
-The outbox retries failed messages with backoff and has a unique deduplication key. Resend is the default provider. In non-production without `RESEND_API_KEY`, processing logs only safe message metadata; production fails closed rather than pretending email was delivered.
+The outbox retries failed messages with backoff and has a unique deduplication key. Set `EMAIL_PROVIDER=smtp` with `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_REQUIRE_TLS`, `SMTP_USER` and `SMTP_PASSWORD` to use SMTP. Port 465 normally uses `SMTP_SECURE=true`; port 587 normally uses `SMTP_SECURE=false` with `SMTP_REQUIRE_TLS=true`. `EMAIL_PROVIDER=auto` selects SMTP when `SMTP_HOST` is set, otherwise Resend when `RESEND_API_KEY` is set. In non-production without either provider, processing logs only safe message metadata; production fails closed rather than pretending email was delivered.
 
 Required messages include email verification, password reset, account setup/claim, booking confirmation, booking cancellation and refund status. The outbox also reclaims stale processing leases so a worker crash does not permanently strand a message.
 
-## Media / R2
+## Media
 
-Admin uploads accept PNG, JPEG and WebP images up to 5 MB. MIME type, size and magic bytes are checked server-side. The server writes only validated admin uploads and stores object keys plus alt text in PostgreSQL. Configure all R2 variables for production. In local development without R2, files go to the ignored `data/uploads` directory and are served through the authenticated application’s media route; this adapter is not a production persistence strategy.
+Admin uploads accept PNG, JPEG and WebP images up to 5 MB. MIME type, size and magic bytes are checked server-side. Validated files are written to `public/assets/classes/<class-id>/` and served directly by Next.js at `/assets/...`; PostgreSQL stores the relative asset key and alt text. In Docker production, the web service mounts a persistent volume at `/app/public/assets` so uploaded media survives container replacement.
 
 ## Content and source references
 
@@ -146,7 +146,7 @@ pnpm exec playwright install chromium
 
 - Use a managed PostgreSQL deployment with encrypted connections, backups and tested restore procedures.
 - Set `APP_URL` to the canonical HTTPS origin and configure Stripe webhook delivery to `/api/stripe/webhook`.
-- Provide a strong Better Auth secret, Stripe live keys, a live webhook secret, Turnstile production keys, R2 credentials and a transactional email provider through the deployment secret manager.
+- Provide a strong Better Auth secret, Stripe live keys, a live webhook secret, Turnstile production keys and a transactional email provider through the deployment secret manager.
 - Run migrations as a controlled release step, not on every request.
 - Run the email outbox processor through a durable scheduler/worker.
 - Put infrastructure-level WAF/rate limits in front of the app in addition to the application rate-limit buckets.

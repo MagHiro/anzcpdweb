@@ -8,6 +8,7 @@ test-results/
 .env.*
 !.env.example
 deploy/production.env
-data/
+public/assets/*
+!public/assets/.gitkeep
 *.log
 *.tsbuildinfo

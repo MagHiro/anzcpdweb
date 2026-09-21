@@ -5,7 +5,7 @@ This repository includes a production Compose stack in [`compose.yaml`](../compo
 - `db`: PostgreSQL 16 with a named persistent volume.
 - `migrate`: a one-shot container that applies the checked-in Drizzle migrations.
 - `web`: the Next.js standalone production server.
-- `worker`: a small process that checks the email outbox every 30 seconds.
+- `worker`: a small process that checks the email outbox every 30 seconds and sends through SMTP or Resend.
 
 The web and worker containers wait for a healthy database and a successful migration. The database is not published to the host. The web container binds to `127.0.0.1:3000` by default so a reverse proxy can terminate HTTPS in front of it.
 
@@ -15,6 +15,7 @@ Use a server with:
 
 - Docker Engine and the Docker Compose plugin (`docker compose`).
 - A persistent disk for the PostgreSQL volume.
+- A persistent disk for the web service's `public/assets` volume.
 - A DNS name and an HTTPS reverse proxy such as Caddy, Nginx or an equivalent managed load balancer.
 
 The included `db` service is suitable for a single-host deployment. For a highly available production database, use a managed PostgreSQL service instead and point `DATABASE_URL` at it; keep backups and restore testing outside the application container lifecycle.
@@ -35,7 +36,8 @@ Edit `deploy/production.env` and set, at minimum:
 - Live Stripe keys and the webhook signing secret.
 - Production Turnstile keys.
 - `RESEND_API_KEY` and `EMAIL_FROM`.
-- All R2 variables. Production local-disk uploads are intentionally rejected, so class images need R2 or another S3-compatible service.
+- If using SMTP, set `EMAIL_PROVIDER=smtp`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_REQUIRE_TLS`, `SMTP_USER` and `SMTP_PASSWORD`. Use port 465 with `SMTP_SECURE=true`, or port 587 with `SMTP_SECURE=false` and `SMTP_REQUIRE_TLS=true`.
+- The web container can write to its mounted `/app/public/assets` volume for class image uploads.
 
 Generate secrets on the server rather than placing real values in source control. For example:
 
@@ -151,7 +153,7 @@ Useful checks:
 - Migration failed: `docker compose --env-file deploy/production.env logs migrate`.
 - Database is unhealthy: `docker compose --env-file deploy/production.env logs db` and check disk space.
 - Web is unhealthy: `docker compose --env-file deploy/production.env logs web`; verify `APP_URL`, `DATABASE_URL` and the required runtime secrets.
-- Emails are pending or failed: `docker compose --env-file deploy/production.env logs worker`; verify Resend credentials and `EMAIL_FROM`.
-- Class image uploads fail: verify every R2 variable and ensure the R2 bucket is reachable from the server.
+- Emails are pending or failed: `docker compose --env-file deploy/production.env logs worker`; verify SMTP or Resend credentials, the sender address and outbound firewall access.
+- Class image uploads fail: verify the web container can write to `/app/public/assets` and that the `public-assets` volume is mounted.
 
 Never commit `deploy/production.env`. It is ignored by the repository’s `.gitignore`; use the server’s secret manager or protected deployment files to distribute it.
