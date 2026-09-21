@@ -70,7 +70,7 @@ Remove those bootstrap variables after the command completes. There is no public
 ```bash
 pnpm db:generate   # create a new checked-in migration after a schema change
 pnpm db:migrate    # apply migrations safely
-pnpm db:seed       # idempotent AU/NZ taxonomy, references and draft classes
+pnpm db:seed       # idempotent AU/NZ taxonomy, references and a completed historical class
 ```
 
 Migrations live in `db/migrations`. Review generated SQL before applying it in production. Back up PostgreSQL before migrations and verify restore procedures. Financial and audit records use restrictive foreign keys or archival states instead of destructive deletion.

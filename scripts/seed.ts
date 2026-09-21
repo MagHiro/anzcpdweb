@@ -7,31 +7,13 @@ import { parseLocalDateTime } from "@/lib/date";
 
 const presenterSeeds = [
   {
-    slug: "maya-singh",
-    name: "Maya Singh",
-    role: "Registered migration agent and practice educator",
+    slug: "james-alan-hall",
+    name: "James Alan Hall",
+    role: "Registered migration agent and CPD presenter",
     location: "Sydney · Australia",
-    initials: "MS",
-    bio: "Maya brings a practical, evidence-led approach to professional obligations, client communication and the small decisions that keep a file defensible.",
+    initials: "JAH",
+    bio: "James brings a practical, source-led approach to professional obligations, client communication and the decisions that keep a migration file defensible.",
     expertise: ["Professional obligations", "Ethics and conduct", "Evidence strategy"],
-  },
-  {
-    slug: "james-wilson",
-    name: "James Wilson",
-    role: "Immigration adviser and policy analyst",
-    location: "Melbourne · Australia",
-    initials: "JW",
-    bio: "James helps advisers turn changing policy into a disciplined reading practice, with sessions built around source checking and sound professional judgment.",
-    expertise: ["Skilled migration", "Policy reading", "File quality"],
-  },
-  {
-    slug: "ania-te-rangi",
-    name: "Ania Te Rangi",
-    role: "Licensed immigration adviser and facilitator",
-    location: "Auckland · New Zealand",
-    initials: "AT",
-    bio: "Ania focuses on clear, teachable methods for working with New Zealand immigration instructions, evidence and the realities of adviser practice.",
-    expertise: ["NZ instructions", "Residence pathways", "Adviser practice"],
   },
 ];
 
@@ -90,30 +72,28 @@ for (const source of sourceSeeds) {
 }
 
 const date = (value: string, timezone: string) => parseLocalDateTime(value, timezone);
+const seededAt = new Date();
 const classSeeds = [
-  { country: "AU" as const, category: "ethics-code-of-conduct", title: "Ethical Standards for Registered Migration Agents — 2026 Update", slug: "ethical-standards-registered-migration-agents-2026", shortDescription: "A development session on ethical standards, professional judgment and the boundaries of competent migration-agent practice.", fullDescription: "This draft activity examines the role of ethical standards in registered migration-agent practice, including conflicts, client communication, file decisions and the professional responsibilities that sit alongside technical visa knowledge. It is development material, not a statement of OMARA approval or a substitute for the current Code of Conduct.", start: "2026-10-06T09:30", end: "2026-10-06T11:00", open: "2026-09-21T09:00", close: "2026-10-06T09:00", timezone: "Australia/Sydney", price: 19500, capacity: 30, cpd: "1", categorySource: "https://www.mara.gov.au/continuing-professional-development/before-you-re-register/cpd-rules" },
-  { country: "AU" as const, category: "ethics-code-of-conduct", title: "Code of Conduct for Registered Migration Agents — Professional Obligations", slug: "code-of-conduct-professional-obligations", shortDescription: "Work through the professional obligations that shape advice, evidence, communication and file stewardship.", fullDescription: "A practical draft discussion of professional obligations under the registered migration-agent Code of Conduct. The class uses scenarios around scope, evidence, records and client expectations, with prompts for participants to compare practice systems against the current authoritative requirements.", start: "2026-10-20T13:00", end: "2026-10-20T15:00", open: "2026-09-21T09:00", close: "2026-10-20T12:30", timezone: "Australia/Melbourne", price: 21500, capacity: 30, cpd: "1", categorySource: "https://www.mara.gov.au/continuing-professional-development/before-you-re-register/cpd-rules" },
-  { country: "AU" as const, category: "skilled-migration", title: "Skilled Independent, Skilled Nominated and Skilled Work Regional Pathways", slug: "skilled-independent-nominated-regional-pathways", shortDescription: "A structured review of subclasses 189, 190 and 491, with emphasis on evidence and pathway distinctions.", fullDescription: "This draft activity compares the Skilled Independent visa (subclass 189), Skilled Nominated visa (subclass 190) and Skilled Work Regional (Provisional) visa (subclass 491). It focuses on reading current program material, identifying evidence gaps and explaining pathway distinctions without treating a generic checklist as legal advice.", start: "2026-11-03T09:30", end: "2026-11-03T12:00", open: "2026-09-21T09:00", close: "2026-11-03T09:00", timezone: "Australia/Brisbane", price: 26500, capacity: 40, cpd: "2", categorySource: "https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list" },
-  { country: "AU" as const, category: "employer-sponsored-migration", title: "Skills in Demand, Employer Nomination and Regional Employer-Sponsored Pathways", slug: "skills-in-demand-employer-nomination-regional-pathways", shortDescription: "A source-led session on subclass 482, subclass 186 and regional employer-sponsored practice.", fullDescription: "This draft activity uses current Department of Home Affairs terminology to compare Skills in Demand (subclass 482), Employer Nomination Scheme (subclass 186) and regional employer-sponsored pathways. It is designed to help practitioners identify which source questions need to be checked before advising or preparing evidence.", start: "2026-11-17T13:00", end: "2026-11-17T15:30", open: "2026-09-21T09:00", close: "2026-11-17T12:30", timezone: "Australia/Perth", price: 28500, capacity: 40, cpd: "2", categorySource: "https://immi.homeaffairs.gov.au/visas/working-in-australia/skill-occupation-list" },
-  { country: "NZ" as const, category: "residence-instructions", title: "Immigration New Zealand Operational Manual — Reading and Applying Instructions", slug: "reading-applying-immigration-new-zealand-instructions", shortDescription: "Build a disciplined method for locating, reading and applying current Immigration New Zealand instructions.", fullDescription: "This draft activity introduces a source-first reading method for the Immigration New Zealand Operational Manual. It focuses on instruction structure, effective dates, evidence questions and the difference between a public summary and the instruction that must be checked before professional work is completed.", start: "2026-10-08T10:00", end: "2026-10-08T12:00", open: "2026-09-21T09:00", close: "2026-10-08T09:30", timezone: "Pacific/Auckland", price: 22500, capacity: 30, cpd: "2.0", categorySource: "https://www.immigration.govt.nz/opsmanual/90250.htm" },
-  { country: "NZ" as const, category: "skilled-migrant-category", title: "Skilled Migrant Category — Reading Current Residence Instructions", slug: "skilled-migrant-category-current-residence-instructions", shortDescription: "Trace skilled employment and evidence questions through current residence instructions.", fullDescription: "A draft professional-development session on the Skilled Migrant Category, using the current Operational Manual as an editorial reference. Participants work through how to identify the governing instruction, test evidence against the instruction and record changes for later review.", start: "2026-10-22T13:00", end: "2026-10-22T15:00", open: "2026-09-21T09:00", close: "2026-10-22T12:30", timezone: "Pacific/Auckland", price: 24000, capacity: 30, cpd: "2.0", categorySource: "https://www.immigration.govt.nz/opsmanual/90250.htm" },
-  { country: "NZ" as const, category: "accredited-employer-work-visa", title: "Accredited Employer Work Visa — Accreditation, Job Checks and Applicant Requirements", slug: "accredited-employer-work-visa-accreditation-job-checks", shortDescription: "Connect employer accreditation, Job Checks and applicant requirements without collapsing the stages into one checklist.", fullDescription: "This draft activity follows the three-stage structure described in Immigration New Zealand material: employer accreditation, Job Check and work visa. It considers the evidence and instruction questions that arise at each stage and is intended for professional development, not a guarantee of an application outcome.", start: "2026-11-05T10:00", end: "2026-11-05T12:30", open: "2026-09-21T09:00", close: "2026-11-05T09:30", timezone: "Pacific/Auckland", price: 25500, capacity: 35, cpd: "2.5", categorySource: "https://www.immigration.govt.nz/opsmanual/82317.htm" },
-  { country: "NZ" as const, category: "temporary-entry", title: "New Zealand Temporary Entry Instructions — Work, Student and Visitor Matters", slug: "new-zealand-temporary-entry-work-student-visitor", shortDescription: "A practice-focused session on identifying the right temporary-entry instruction and supporting evidence.", fullDescription: "This draft session considers how professional advisers distinguish work, student and visitor temporary-entry questions, how evidence is framed, and how to document source checks when instructions or policy settings move. Current Immigration New Zealand sources should be reviewed before publication.", start: "2026-11-19T13:00", end: "2026-11-19T15:00", open: "2026-09-21T09:00", close: "2026-11-19T12:30", timezone: "Pacific/Auckland", price: 22500, capacity: 35, cpd: "2.0", categorySource: "https://www.immigration.govt.nz/opsmanual/82317.htm" },
+  { country: "AU" as const, category: "ethics-code-of-conduct", presenter: "james-alan-hall", title: "Professional Practice and the Code of Conduct", slug: "professional-practice-code-of-conduct", shortDescription: "A completed professional-development session on ethical standards, professional judgment and defensible migration-agent practice.", fullDescription: "This historical activity examined ethical standards in registered migration-agent practice, including conflicts, client communication, file decisions and the professional responsibilities that sit alongside technical visa knowledge. It is retained as catalogue history and is not a statement of OMARA approval or a substitute for the current Code of Conduct.", start: "2025-06-12T10:00", end: "2025-06-12T12:00", open: "2025-05-01T09:00", close: "2025-06-12T09:00", timezone: "Australia/Sydney", price: 19500, capacity: 30, cpd: "2", categorySource: "https://www.mara.gov.au/continuing-professional-development/before-you-re-register/cpd-rules" },
 ];
 
 for (const item of classSeeds) {
   const categoryId = categoryIds.get(`${item.country}:${item.category}`);
   if (!categoryId) throw new Error(`Missing category for ${item.slug}`);
   const country = COUNTRY_CONFIG[item.country];
-  const presenterSlug = item.country === "NZ" ? "ania-te-rangi" : item.category === "ethics-code-of-conduct" ? "maya-singh" : "james-wilson";
-  const [classRecord] = await db.insert(classes).values({ title: item.title, slug: item.slug, country: item.country, categoryId, presenterId: presenterIds.get(presenterSlug), shortDescription: item.shortDescription, fullDescription: item.fullDescription, startAt: date(item.start, item.timezone), endAt: date(item.end, item.timezone), timezone: item.timezone, bookingOpensAt: date(item.open, item.timezone), bookingClosesAt: date(item.close, item.timezone), deliveryFormat: "ONLINE", onlineAttendanceInfo: "Online attendance details will be provided after confirmed payment.", priceMinorUnits: item.price, currency: country.currency, seatCapacity: item.capacity, unlimitedCapacity: false, cpdUnitType: country.cpdUnitType, cpdUnitAmount: item.cpd, cpdActivityCategory: item.country === "AU" ? "Workshop" : "Private study with assessment", professionalIdentifierRequired: true, status: "DRAFT", seoTitle: item.title, seoDescription: item.shortDescription }).onConflictDoNothing({ target: classes.slug }).returning({ id: classes.id, presenterId: classes.presenterId });
+  const startAt = date(item.start, item.timezone);
+  const endAt = date(item.end, item.timezone);
+  if (endAt >= seededAt) throw new Error(`Seed class ${item.slug} must be in the past`);
+  const presenterId = presenterIds.get(item.presenter);
+  if (!presenterId) throw new Error(`Missing presenter for ${item.slug}`);
+  const [classRecord] = await db.insert(classes).values({ title: item.title, slug: item.slug, country: item.country, categoryId, presenterId, shortDescription: item.shortDescription, fullDescription: item.fullDescription, startAt, endAt, timezone: item.timezone, bookingOpensAt: date(item.open, item.timezone), bookingClosesAt: date(item.close, item.timezone), deliveryFormat: "ONLINE", onlineAttendanceInfo: "This historical activity is no longer open for booking.", priceMinorUnits: item.price, currency: country.currency, seatCapacity: item.capacity, unlimitedCapacity: false, cpdUnitType: country.cpdUnitType, cpdUnitAmount: item.cpd, cpdActivityCategory: "Workshop", professionalIdentifierRequired: true, status: "COMPLETED", seoTitle: item.title, seoDescription: item.shortDescription }).onConflictDoNothing({ target: classes.slug }).returning({ id: classes.id, presenterId: classes.presenterId });
   const [existingClass] = classRecord ? [classRecord] : await db.select({ id: classes.id, presenterId: classes.presenterId }).from(classes).where(eq(classes.slug, item.slug)).limit(1);
-  if (existingClass && !classRecord && !existingClass.presenterId) await db.update(classes).set({ presenterId: presenterIds.get(presenterSlug), updatedAt: new Date() }).where(eq(classes.id, existingClass.id));
+  if (existingClass && !classRecord && !existingClass.presenterId) await db.update(classes).set({ presenterId, updatedAt: new Date() }).where(eq(classes.id, existingClass.id));
   const sourceId = sourceIds.get(item.categorySource);
   if (existingClass && sourceId) await db.insert(classSourceReferences).values({ classId: existingClass.id, sourceReferenceId: sourceId }).onConflictDoNothing();
 }
 
-  console.log(`Seeded ${categorySeeds.length} categories and ${classSeeds.length} draft classes for AU/NZ.`);
+  console.log(`Seeded ${categorySeeds.length} categories, ${classSeeds.length} completed historical class, and ${presenterSeeds.length} presenter.`);
 }
 
 void main().catch((error: unknown) => {
