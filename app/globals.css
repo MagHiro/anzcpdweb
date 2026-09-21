@@ -1,34 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #17211f;
-  --muted: #63716e;
-  --paper: #f7f8f5;
-  --surface: #ffffff;
-  --line: #dce3df;
-  --forest: #173c37;
-  --fern: #2e6b5d;
-  --ochre: #b77b3f;
-  --mist: #e8efeb;
-  --error: #9d3d35;
+  --ink: #12241f;
+  --muted: #64736e;
+  --paper: #f4f1eb;
+  --surface: #fffdf9;
+  --line: #d8e0da;
+  --forest: #163f38;
+  --fern: #2f6a5b;
+  --signal: #d97454;
+  --signal-soft: #f8e7df;
+  --mist: #e9f0ec;
+  --info: #3f6570;
+  --success: #34745d;
+  --warning: #a96f34;
+  --error: #a54e45;
+  --shadow-soft: 0 18px 60px rgba(18, 36, 31, .08);
+  --shadow-hover: 0 24px 70px rgba(18, 36, 31, .14);
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body {
-  background: var(--paper);
-  color: var(--ink);
-  font-feature-settings: "kern" 1, "liga" 1;
-  text-rendering: optimizeLegibility;
-}
-
-::selection { background: #c9dfd5; color: var(--forest); }
+body { background: var(--paper); color: var(--ink); font-feature-settings: "kern" 1, "liga" 1; text-rendering: optimizeLegibility; }
+::selection { background: #f0c4b3; color: var(--forest); }
+a, button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button, a { transition: color .2s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
-.display { font-family: Georgia, "Times New Roman", serif; letter-spacing: -0.045em; }
-.eyebrow { letter-spacing: .16em; text-transform: uppercase; font-size: .7rem; font-weight: 700; }
-.focus-ring:focus-visible { outline: 3px solid var(--ochre); outline-offset: 3px; }
+.display { font-family: Iowan Old Style, Baskerville, "Times New Roman", serif; letter-spacing: -.045em; }
+.eyebrow { letter-spacing: .16em; text-transform: uppercase; font-size: .68rem; font-weight: 800; }
+.focus-ring:focus-visible { outline: 3px solid var(--signal); outline-offset: 3px; }
+.hairline { border-color: color-mix(in srgb, var(--line) 78%, transparent); }
+.surface-grid { background-image: linear-gradient(to right, rgba(22, 63, 56, .06) 1px, transparent 1px), linear-gradient(to bottom, rgba(22, 63, 56, .06) 1px, transparent 1px); background-size: 42px 42px; }
+.dot-grid { background-image: radial-gradient(rgba(255, 253, 249, .34) 1px, transparent 1px); background-size: 16px 16px; }
+.grain { position: relative; isolation: isolate; }
+.grain::after { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .06; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E"); mix-blend-mode: multiply; }
+.card-lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.prose a { color: var(--forest); font-weight: 700; text-decoration: underline; text-decoration-color: var(--signal); text-underline-offset: 4px; }
+.prose p + p { margin-top: 1.35rem; }

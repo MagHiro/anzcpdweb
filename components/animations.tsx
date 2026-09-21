@@ -11,9 +11,9 @@ export function HeroMotion({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     if (!root.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const context = gsap.context(() => {
-      gsap.from("[data-hero-line]", { y: 34, duration: .85, ease: "power3.out", stagger: .08 });
-      gsap.from("[data-hero-meta]", { y: 18, duration: .7, delay: .35, ease: "power2.out" });
-      gsap.to("[data-hero-orb]", { yPercent: -14, ease: "none", scrollTrigger: { trigger: root.current, start: "top top", end: "bottom top", scrub: true } });
+      gsap.from("[data-hero-line]", { y: 28, opacity: 0, duration: .8, ease: "power3.out", stagger: .08 });
+      gsap.from("[data-hero-meta]", { y: 16, opacity: 0, duration: .7, delay: .2, ease: "power2.out", stagger: .06 });
+      gsap.to("[data-hero-art]", { yPercent: -10, rotate: 2, ease: "none", scrollTrigger: { trigger: root.current, start: "top top", end: "bottom top", scrub: true } });
     }, root);
     return () => context.revert();
   }, []);
@@ -25,7 +25,7 @@ export function Reveal({ children, className = "" }: { children: ReactNode; clas
   useLayoutEffect(() => {
     if (!root.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const context = gsap.context(() => {
-      gsap.from(root.current, { y: 24, duration: .75, ease: "power2.out", scrollTrigger: { trigger: root.current, start: "top 88%", once: true } });
+      gsap.from(root.current, { y: 20, opacity: 0, duration: .65, ease: "power2.out", scrollTrigger: { trigger: root.current, start: "top 88%", once: true } });
     }, root);
     return () => context.revert();
   }, []);
