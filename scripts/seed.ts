@@ -3,8 +3,37 @@ import { and, eq } from "drizzle-orm";
 import { categories, classSourceReferences, classes, countries, presenters, sourceReferences } from "@/db/schema";
 import { closeDb, getDb } from "@/lib/db";
 import { COUNTRY_CONFIG } from "@/lib/domain/countries";
-import { presenters as presenterSeeds } from "@/lib/domain/cpd";
 import { parseLocalDateTime } from "@/lib/date";
+
+const presenterSeeds = [
+  {
+    slug: "maya-singh",
+    name: "Maya Singh",
+    role: "Registered migration agent and practice educator",
+    location: "Sydney · Australia",
+    initials: "MS",
+    bio: "Maya brings a practical, evidence-led approach to professional obligations, client communication and the small decisions that keep a file defensible.",
+    expertise: ["Professional obligations", "Ethics and conduct", "Evidence strategy"],
+  },
+  {
+    slug: "james-wilson",
+    name: "James Wilson",
+    role: "Immigration adviser and policy analyst",
+    location: "Melbourne · Australia",
+    initials: "JW",
+    bio: "James helps advisers turn changing policy into a disciplined reading practice, with sessions built around source checking and sound professional judgment.",
+    expertise: ["Skilled migration", "Policy reading", "File quality"],
+  },
+  {
+    slug: "ania-te-rangi",
+    name: "Ania Te Rangi",
+    role: "Licensed immigration adviser and facilitator",
+    location: "Auckland · New Zealand",
+    initials: "AT",
+    bio: "Ania focuses on clear, teachable methods for working with New Zealand immigration instructions, evidence and the realities of adviser practice.",
+    expertise: ["NZ instructions", "Residence pathways", "Adviser practice"],
+  },
+];
 
 async function main() {
   const db = getDb();
@@ -77,9 +106,9 @@ for (const item of classSeeds) {
   if (!categoryId) throw new Error(`Missing category for ${item.slug}`);
   const country = COUNTRY_CONFIG[item.country];
   const presenterSlug = item.country === "NZ" ? "ania-te-rangi" : item.category === "ethics-code-of-conduct" ? "maya-singh" : "james-wilson";
-  const [classRecord] = await db.insert(classes).values({ title: item.title, slug: item.slug, country: item.country, categoryId, presenterId: presenterIds.get(presenterSlug), shortDescription: item.shortDescription, fullDescription: item.fullDescription, startAt: date(item.start, item.timezone), endAt: date(item.end, item.timezone), timezone: item.timezone, bookingOpensAt: date(item.open, item.timezone), bookingClosesAt: date(item.close, item.timezone), deliveryFormat: "ONLINE", onlineAttendanceInfo: "Online attendance details will be provided after confirmed payment.", priceMinorUnits: item.price, currency: country.currency, seatCapacity: item.capacity, unlimitedCapacity: false, cpdUnitType: country.cpdUnitType, cpdUnitAmount: item.cpd, cpdActivityCategory: item.country === "AU" ? "Workshop" : "Private study with assessment", professionalIdentifierRequired: true, status: "DRAFT", seoTitle: item.title, seoDescription: item.shortDescription }).onConflictDoNothing({ target: classes.slug }).returning({ id: classes.id, presenterId: classes.presenterId, cpdActivityCategory: classes.cpdActivityCategory });
-  const [existingClass] = classRecord ? [classRecord] : await db.select({ id: classes.id, presenterId: classes.presenterId, cpdActivityCategory: classes.cpdActivityCategory }).from(classes).where(eq(classes.slug, item.slug)).limit(1);
-  if (existingClass && !classRecord && !existingClass.presenterId) await db.update(classes).set({ presenterId: presenterIds.get(presenterSlug), cpdActivityCategory: existingClass.cpdActivityCategory === "Category A" || existingClass.cpdActivityCategory === "Professional practice" ? item.country === "AU" ? "Workshop" : "Private study with assessment" : existingClass.cpdActivityCategory, updatedAt: new Date() }).where(eq(classes.id, existingClass.id));
+  const [classRecord] = await db.insert(classes).values({ title: item.title, slug: item.slug, country: item.country, categoryId, presenterId: presenterIds.get(presenterSlug), shortDescription: item.shortDescription, fullDescription: item.fullDescription, startAt: date(item.start, item.timezone), endAt: date(item.end, item.timezone), timezone: item.timezone, bookingOpensAt: date(item.open, item.timezone), bookingClosesAt: date(item.close, item.timezone), deliveryFormat: "ONLINE", onlineAttendanceInfo: "Online attendance details will be provided after confirmed payment.", priceMinorUnits: item.price, currency: country.currency, seatCapacity: item.capacity, unlimitedCapacity: false, cpdUnitType: country.cpdUnitType, cpdUnitAmount: item.cpd, cpdActivityCategory: item.country === "AU" ? "Workshop" : "Private study with assessment", professionalIdentifierRequired: true, status: "DRAFT", seoTitle: item.title, seoDescription: item.shortDescription }).onConflictDoNothing({ target: classes.slug }).returning({ id: classes.id, presenterId: classes.presenterId });
+  const [existingClass] = classRecord ? [classRecord] : await db.select({ id: classes.id, presenterId: classes.presenterId }).from(classes).where(eq(classes.slug, item.slug)).limit(1);
+  if (existingClass && !classRecord && !existingClass.presenterId) await db.update(classes).set({ presenterId: presenterIds.get(presenterSlug), updatedAt: new Date() }).where(eq(classes.id, existingClass.id));
   const sourceId = sourceIds.get(item.categorySource);
   if (existingClass && sourceId) await db.insert(classSourceReferences).values({ classId: existingClass.id, sourceReferenceId: sourceId }).onConflictDoNothing();
 }

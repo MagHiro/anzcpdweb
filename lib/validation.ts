@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type { CountryCode } from "@/db/schema";
-import { CPD_ACTIVITY_TYPES } from "@/lib/domain/cpd";
 
 export const countryCodeSchema = z.enum(["AU", "NZ"]);
 export const uuidSchema = z.string().uuid();
@@ -125,7 +124,7 @@ export const classFormSchema = z.object({
   unlimitedCapacity: z.enum(["true", "false"]),
   cpdUnitType: z.enum(["POINTS", "HOURS", "NONE", "CUSTOM"]),
   cpdUnitAmount: z.coerce.number().min(0).max(10_000).optional().or(z.literal("")),
-  cpdActivityCategory: z.union([z.enum(CPD_ACTIVITY_TYPES), z.string().trim().max(120)]).optional().or(z.literal("")),
+  cpdActivityCategory: z.string().trim().max(120).optional().or(z.literal("")),
   professionalIdentifierRequired: z.enum(["true", "false"]),
   mediaAltText: z.string().trim().max(240).optional().or(z.literal("")),
   seoTitle: z.string().trim().max(180).optional().or(z.literal("")),

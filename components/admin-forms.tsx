@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { archiveCategoryAction, archivePresenterAction, cancelClassAction, duplicateClassAction, archiveClassAction, publishClassAction, reorderCategoriesAction, saveCategoryAction, saveClassAction, saveClassSourcesAction, savePresenterAction, saveSourceReferenceAction, unpublishClassAction, type AdminActionState } from "@/server/actions/admin";
 import { Field, FormNotice, Select, TextArea, TextInput, Button } from "@/components/ui";
 import { toDateTimeLocalValue } from "@/lib/date";
-import { CPD_ACTIVITY_TYPES } from "@/lib/domain/cpd";
 import type { categories, classes, presenters, sourceReferences } from "@/db/schema";
 
 const initial: AdminActionState = { ok: false };
@@ -71,7 +70,6 @@ export function AdminClassForm({ classRecord, categories, presenters: presenterO
   const [country, setCountry] = useState<"AU" | "NZ">(classRecord?.country ?? "AU");
   const timezone = classRecord?.timezone ?? "Australia/Sydney";
   const currentActivity = classRecord?.cpdActivityCategory ?? "";
-  const hasLegacyActivity = Boolean(currentActivity) && !CPD_ACTIVITY_TYPES.includes(currentActivity as (typeof CPD_ACTIVITY_TYPES)[number]);
 
   useEffect(() => {
     if (!state.ok || !state.id) return;
@@ -108,7 +106,7 @@ export function AdminClassForm({ classRecord, categories, presenters: presenterO
       <Field label="Capacity model" required><Select name="unlimitedCapacity" defaultValue={String(classRecord?.unlimitedCapacity ?? false)}><option value="false">Capacity controlled</option><option value="true">Unlimited capacity</option></Select></Field>
       <Field label="CPD unit type" required><Select name="cpdUnitType" defaultValue={classRecord?.cpdUnitType ?? "NONE"}><option value="NONE">None specified</option><option value="POINTS">Points</option><option value="HOURS">Hours</option><option value="CUSTOM">Custom</option></Select></Field>
       <Field label="CPD amount" hint="Use points for Australia or hours for New Zealand where supplied." error={state.fieldErrors?.cpdUnitAmount}><TextInput name="cpdUnitAmount" type="number" step="0.25" min={0} defaultValue={classRecord?.cpdUnitAmount ?? ""} /></Field>
-      <Field label="Legislation category / activity type" hint="Select the type that applies to this individual class."><Select name="cpdActivityCategory" defaultValue={currentActivity}><option value="">Not specified</option>{hasLegacyActivity ? <option value={currentActivity}>Current value: {currentActivity}</option> : null}{CPD_ACTIVITY_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}</Select></Field>
+      <Field label="Legislation category / activity type" hint="Use the activity type recorded by the provider."><TextInput name="cpdActivityCategory" defaultValue={currentActivity} maxLength={120} /></Field>
       <Field label="Professional identifier required" required><Select name="professionalIdentifierRequired" defaultValue={String(classRecord?.professionalIdentifierRequired ?? false)}><option value="false">No</option><option value="true">Yes</option></Select></Field>
     </div></section>
     <section className="rounded-[1.2rem] border border-[var(--line)] bg-white p-5 sm:p-6"><p className="eyebrow text-[var(--fern)]">Pricing and booking window</p><div className="mt-5 grid gap-5 sm:grid-cols-2">

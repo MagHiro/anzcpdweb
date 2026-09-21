@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, ilike, inArray, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import { auditLogs, bookings, categories, classMedia, classes, countries, payments, presenters, refunds, sourceReferences, classSourceReferences, type CountryCode, user } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { uuidSchema } from "@/lib/validation";
@@ -32,6 +32,7 @@ export async function getPublishedClasses(filters: {
   time?: "upcoming" | "past";
   search?: string;
   presenterSlug?: string;
+  activityType?: string;
   page?: number;
   pageSize?: number;
 }) {
@@ -48,6 +49,7 @@ export async function getPublishedClasses(filters: {
   else conditions.push(gte(classes.endAt, now));
   if (filters.search) conditions.push(ilike(classes.title, `%${filters.search.replace(/[%_]/g, "\\$&")}%`));
   if (filters.presenterSlug) conditions.push(eq(presenters.slug, filters.presenterSlug));
+  if (filters.activityType) conditions.push(eq(classes.cpdActivityCategory, filters.activityType));
 
   const rows = await db
     .select({
@@ -128,6 +130,25 @@ export async function getPublishedClassBySlug(slug: string) {
   };
 }
 
+export async function getPublishedActivityTypes(country?: CountryCode) {
+  const conditions = [
+    inArray(classes.status, ["PUBLISHED", "SOLD_OUT"] as const),
+    eq(categories.isActive, true),
+    eq(categories.visibility, "VISIBLE"),
+    isNotNull(classes.cpdActivityCategory),
+  ];
+  if (country) conditions.push(eq(classes.country, country));
+  const rows = await getDb()
+    .select({ value: classes.cpdActivityCategory, count: sql<number>`count(*)::int` })
+    .from(classes)
+    .innerJoin(categories, eq(classes.categoryId, categories.id))
+    .where(and(...conditions))
+    .groupBy(classes.cpdActivityCategory)
+    .orderBy(asc(classes.cpdActivityCategory));
+
+  return rows.flatMap((row) => row.value ? [{ value: row.value, count: Number(row.count) }] : []);
+}
+
 export async function getClassSourceReferences(classId: string) {
   return getDb()
     .select({ source: sourceReferences })
@@ -135,6 +156,15 @@ export async function getClassSourceReferences(classId: string) {
     .innerJoin(sourceReferences, eq(classSourceReferences.sourceReferenceId, sourceReferences.id))
     .where(eq(classSourceReferences.classId, classId))
     .orderBy(desc(sourceReferences.checkedAt));
+}
+
+export async function getPublicSourceReferences(jurisdiction?: CountryCode) {
+  const condition = jurisdiction ? eq(sourceReferences.jurisdiction, jurisdiction) : undefined;
+  return getDb()
+    .select()
+    .from(sourceReferences)
+    .where(condition)
+    .orderBy(desc(sourceReferences.checkedAt), asc(sourceReferences.authority), asc(sourceReferences.title));
 }
 
 export async function getAdminSourceReferences(jurisdiction?: CountryCode) {
