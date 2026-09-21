@@ -1,30 +1,77 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #12241f;
-  --muted: #64736e;
-  --paper: #f4f1eb;
-  --surface: #fffdf9;
-  --line: #d8e0da;
-  --forest: #163f38;
+  --color-canvas: #f6f3ec;
+  --color-surface: #fffdf8;
+  --color-inset: #eef3ef;
+  --color-ink: #173b34;
+  --color-muted: #5f706a;
+  --color-subtle: #81908a;
+  --color-border: #d5e0d9;
+  --color-border-strong: #b8cbc1;
+  --color-brand: #155044;
+  --color-brand-hover: #103d35;
+  --color-accent: #d36b4d;
+  --color-accent-soft: #fae9e1;
+  --color-info: #3e6d79;
+  --color-success: #2f725c;
+  --color-success-soft: #e8f3ed;
+  --color-warning: #a56a2b;
+  --color-warning-soft: #fbf2e5;
+  --color-danger: #a64f47;
+  --color-danger-soft: #fff0ed;
+  --color-focus: #e18464;
+  --color-selection: #f0c4b3;
+  --color-inverse: #ffffff;
+  --radius-control: .6rem;
+  --radius-surface: .85rem;
+  --radius-feature: 1rem;
+  --radius-pill: 999px;
+  --size-control-sm: 2.25rem;
+  --size-control-md: 2.75rem;
+  --size-control-lg: 3rem;
+  --motion-fast: 120ms;
+  --motion-standard: 180ms;
+  --motion-slow: 240ms;
+  --z-header: 40;
+  --z-drawer: 50;
+  --z-dialog: 60;
+  --z-toast: 70;
+  --shadow-surface: 0 8px 24px rgba(23, 59, 52, .06);
+  --shadow-overlay: 0 20px 60px rgba(23, 59, 52, .18);
+
+  /* Backwards-compatible aliases used by the routes that have not migrated yet. */
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --paper: var(--color-canvas);
+  --surface: var(--color-surface);
+  --line: var(--color-border);
+  --forest: var(--color-brand);
   --fern: #2f6a5b;
-  --signal: #d97454;
-  --signal-soft: #f8e7df;
-  --mist: #e9f0ec;
-  --info: #3f6570;
-  --success: #34745d;
-  --warning: #a96f34;
-  --error: #a54e45;
-  --shadow-soft: 0 18px 60px rgba(18, 36, 31, .08);
-  --shadow-hover: 0 24px 70px rgba(18, 36, 31, .14);
+  --signal: var(--color-accent);
+  --signal-soft: var(--color-accent-soft);
+  --mist: var(--color-inset);
+  --info: var(--color-info);
+  --success: var(--color-success);
+  --warning: var(--color-warning);
+  --error: var(--color-danger);
+  --shadow-soft: var(--shadow-surface);
+  --shadow-hover: 0 16px 36px rgba(23, 59, 52, .12);
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { background: var(--paper); color: var(--ink); font-feature-settings: "kern" 1, "liga" 1; text-rendering: optimizeLegibility; }
-::selection { background: #f0c4b3; color: var(--forest); }
+body { background: var(--color-canvas); color: var(--color-ink); font-feature-settings: "kern" 1, "liga" 1, "tnum" 1; text-rendering: optimizeLegibility; }
+::selection { background: var(--color-selection); color: var(--color-brand); }
 a, button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
-button, a { transition: color .2s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+button, a { transition: color var(--motion-standard) ease, background-color var(--motion-standard) ease, border-color var(--motion-standard) ease, box-shadow var(--motion-standard) ease, transform var(--motion-standard) ease; }
+
+button:disabled { cursor: not-allowed; }
+input, select, textarea { font: inherit; }
+
+.data-numeric { font-variant-numeric: tabular-nums; }
+.surface-rule { border-color: color-mix(in srgb, var(--color-border) 88%, transparent); }
+.content-measure { max-width: 68rem; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -33,7 +80,7 @@ button, a { transition: color .2s ease, background-color .2s ease, border-color 
 
 .display { font-family: Iowan Old Style, Baskerville, "Times New Roman", serif; letter-spacing: -.045em; }
 .eyebrow { letter-spacing: .16em; text-transform: uppercase; font-size: .68rem; font-weight: 800; }
-.focus-ring:focus-visible { outline: 3px solid var(--signal); outline-offset: 3px; }
+.focus-ring:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
 .hairline { border-color: color-mix(in srgb, var(--line) 78%, transparent); }
 .surface-grid { background-image: linear-gradient(to right, rgba(22, 63, 56, .06) 1px, transparent 1px), linear-gradient(to bottom, rgba(22, 63, 56, .06) 1px, transparent 1px); background-size: 42px 42px; }
 .dot-grid { background-image: radial-gradient(rgba(255, 253, 249, .34) 1px, transparent 1px); background-size: 16px 16px; }
