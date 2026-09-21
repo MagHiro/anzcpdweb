@@ -154,13 +154,8 @@ pnpm exec playwright install chromium
 - Keep the per-request CSP nonce configuration in `proxy.ts`; the remaining `style-src 'unsafe-inline'` is deliberate for runtime styling/animation compatibility and should be revisited if the frontend no longer needs it.
 - Replace the public legal information pages with the operating entity’s reviewed privacy, terms and refund language before launch.
 
-## Production Docker image
+## Production Docker Compose deployment
 
-The repository includes a production-only multi-stage `Dockerfile`. It builds the Next.js standalone output and copies only the traced runtime, static assets and public assets into the final image.
+Use the production Compose stack in [`docs/docker-production.md`](docs/docker-production.md). It builds the standalone web image, runs PostgreSQL with a persistent volume, applies migrations before startup and keeps the email outbox processor running as a separate service.
 
-```bash
-docker build -t anzcpdweb:production .
-docker run --rm -p 3000:3000 --env-file .env anzcpdweb:production
-```
-
-Provide production secrets at runtime through the deployment platform. The image does not run migrations, seed data or background workers; run those as controlled release and worker jobs separately.
+The final web image remains independently buildable with `docker build -t anzcpdweb:production .`, but production deployments should use Compose so database readiness, migrations and the worker have an explicit lifecycle.

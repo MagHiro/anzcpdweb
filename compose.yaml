@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:?POSTGRES_DB must be set in deploy/production.env}"
+      POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER must be set in deploy/production.env}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in deploy/production.env}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  migrate:
+    build:
+      context: .
+      target: migration
+    image: anzcpdweb:migration
+    env_file:
+      - ./deploy/production.env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    init: true
+
+  web:
+    build:
+      context: .
+      target: runner
+    image: anzcpdweb:production
+    env_file:
+      - ./deploy/production.env
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+
+  worker:
+    build:
+      context: .
+      target: worker
+    image: anzcpdweb:worker
+    env_file:
+      - ./deploy/production.env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: ["sh", "-c", "while :; do node_modules/.bin/tsx scripts/process-email-outbox.ts; sleep 30; done"]
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 10s
+
+volumes:
+  postgres-data:

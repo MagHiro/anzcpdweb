@@ -6,6 +6,19 @@ RUN corepack enable && corepack prepare pnpm@12.4.1 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
+FROM deps AS tools
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY . .
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
+USER nextjs
+
+FROM tools AS migration
+CMD ["node_modules/.bin/tsx", "scripts/migrate.ts"]
+
+FROM tools AS worker
+CMD ["node_modules/.bin/tsx", "scripts/process-email-outbox.ts"]
+
 FROM node:22-alpine AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
