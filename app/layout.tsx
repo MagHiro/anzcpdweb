@@ -4,7 +4,12 @@ import { SiteFooter } from "@/components/site-header";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
-const googleSansFlex = Google_Sans_Flex({ subsets: ["latin"] });
+const googleSansFlex = Google_Sans_Flex({
+  subsets: ["latin"],
+  display: "swap",
+  fallback: ["Arial", "sans-serif"],
+  adjustFontFallback: false,
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
