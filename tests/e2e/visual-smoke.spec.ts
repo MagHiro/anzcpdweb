@@ -19,6 +19,10 @@ for (const path of ["/", "/classes", "/complaints", "/complaints/procedure"]) {
     await expect(page.locator("main h1").first()).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, "Mobile horizontal overflow on " + path).toBeLessThanOrEqual(1);
+    // Capture the settled UI, not the transient GSAP heading-reveal state.
+    await page.waitForTimeout(1500);
+    // Next.js dev toolbar is not part of the deployed customer interface.
+    await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
     await page.screenshot({ path: "test-results/smoke-" + path.replaceAll("/", "-").replace(/^-/, "") + "-mobile.png", fullPage: true });
   });
 }
