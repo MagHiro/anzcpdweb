@@ -26,3 +26,53 @@ jobs:
         run: pnpm test
       - name: Production build
         run: pnpm build
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: anzcpd
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d anzcpd"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/anzcpd
+      BETTER_AUTH_SECRET: browser-test-only-secret-012345678901234567890123
+      APP_URL: http://127.0.0.1:3100
+      TURNSTILE_DEV_BYPASS: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Apply database schema
+        run: pnpm db:migrate
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Browser journeys and responsive smoke checks
+        run: pnpm test:e2e
+      - name: Upload browser screenshots and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
