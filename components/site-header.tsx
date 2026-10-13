@@ -45,7 +45,7 @@ export function SiteHeader() {
       <Link href="/" className="brand-lockup focus-ring" onClick={() => setOpen(false)} aria-label="ANZ Migration Academy home">
         <AcademyMark /><span><strong>ANZ Migration</strong><small>Academy / CPD</small></span>
       </Link>
-      <button ref={buttonRef} type="button" aria-label={open ? "Close navigation" : "Open navigation"} aria-expanded={open} aria-controls="site-navigation" className="mobile-menu-trigger focus-ring md:hidden" onClick={() => setOpen(v => !v)}>{open ? <CloseIcon /> : <MenuIcon />}</button>
+      <button ref={buttonRef} type="button" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="site-navigation" className="mobile-menu-trigger focus-ring md:hidden" onClick={() => setOpen(v => !v)}>{open ? <CloseIcon /> : <MenuIcon />}</button>
       <nav id="site-navigation" aria-label="Main navigation" className={cn("site-navigation", open && "is-open")}>
         {navigation.map(item => <Link key={item.href} href={item.href} aria-current={active(item.href) ? "page" : undefined} onClick={() => setOpen(false)} className={cn("site-nav-link focus-ring", active(item.href) && "is-active")}>{item.label}</Link>)}
         <Link href="/sign-in" onClick={() => setOpen(false)} className="site-signin focus-ring">My account <ArrowUpRight size={17} /></Link>
