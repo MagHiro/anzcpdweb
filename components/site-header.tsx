@@ -24,7 +24,6 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
-  useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
