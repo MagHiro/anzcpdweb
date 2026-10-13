@@ -14,7 +14,7 @@ const adminGroups: NavGroup[] = [
   { label: "System", links: [{ href: "/admin/audit-log", label: "Audit log", icon: "shield" }, { href: "/admin/settings", label: "Settings", icon: "settings" }] },
 ];
 const accountGroups: NavGroup[] = [
-  { label: "Your learning", links: [{ href: "/account", label: "Overview", icon: "grid" }, { href: "/account/bookings", label: "My bookings", icon: "calendar" }] },
+  { label: "Your learning", links: [{ href: "/account", label: "Overview", icon: "grid" }, { href: "/account/bookings", label: "My bookings", icon: "calendar" }, { href: "/account/support", label: "Support", icon: "message" }] },
   { label: "Your account", links: [{ href: "/account/profile", label: "Profile", icon: "users" }, { href: "/account/security", label: "Security", icon: "shield" }] },
 ];
 const paths: Record<NavItem["icon"], ReactNode> = {
