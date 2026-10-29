@@ -1,6 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { bookings, categories, classMedia, classSourceReferences, classes, presenters, sourceReferences, type CountryCode } from "@/db/schema";
-import { getCountryConfig } from "@/lib/domain/countries";
 import { getDb } from "@/lib/db";
 import { makePublicBookingReference, slugify } from "@/lib/utils";
 import { getServerEnv } from "@/lib/env";
@@ -251,10 +250,9 @@ export async function publishClass(id: string) {
   const [record] = await tx.select().from(classes).where(eq(classes.id, id)).for("update").limit(1);
   if (!record) throw new Error("Class not found.");
   if (["CANCELLED", "COMPLETED", "ARCHIVED"].includes(record.status)) throw new Error("This class cannot be published from its current lifecycle state.");
-  const country = getCountryConfig(record.country);
   const [category] = await tx.select({ country: categories.country, isActive: categories.isActive, visibility: categories.visibility }).from(categories).where(eq(categories.id, record.categoryId)).for("share").limit(1);
   if (!category || category.country !== record.country || !category.isActive || category.visibility !== "VISIBLE") throw new Error("Cannot publish: choose an active, visible category from the class country. Update the category in Admin → Categories, save, then publish again.");
-  if (record.currency !== country.currency) throw new Error(`The ${country.name} class must use ${country.currency} before it can be published.`);
+  if (!["AUD", "NZD"].includes(record.currency)) throw new Error("Choose AUD or NZD before publishing this class.");
   if (!record.shortDescription || !record.fullDescription || !record.categoryId || !record.timezone) throw new Error("Complete the required class information before publishing.");
   if (record.deliveryFormat !== "ONLINE" && (!record.venueName?.trim() || !record.venueAddress?.trim())) throw new Error("Cannot publish: add both the venue name and venue address for this in-person or hybrid class. Save the class, then publish again.");
   if (record.deliveryFormat !== "IN_PERSON" && !record.onlineAttendanceInfo?.trim()) throw new Error("Cannot publish: add online attendance information. Save the class, then publish again.");

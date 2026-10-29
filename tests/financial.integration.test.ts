@@ -91,6 +91,15 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     await expect(publishClass(record.id)).rejects.toThrow("lifecycle state");
   });
 
+  it("publishes Australian classes priced in NZD", async () => {
+    const { record } = await fixture();
+    await db.update(classes).set({ status: "DRAFT", currency: "NZD", onlineAttendanceInfo: "Joining instructions will be emailed." }).where(eq(classes.id, record.id));
+    const published = await publishClass(record.id);
+    expect(published.status).toBe("PUBLISHED");
+    expect(published.country).toBe("AU");
+    expect(published.currency).toBe("NZD");
+  });
+
   it("ignores terminal events from an old Checkout attempt", async () => {
     const { booking, session } = await fixture("PENDING_PAYMENT");
     await markCheckoutExpired({ ...session, id: "cs_old" });

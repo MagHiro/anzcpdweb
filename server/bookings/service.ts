@@ -106,7 +106,7 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
     const reservationExpiresAt = new Date(now.getTime() + 31 * 60 * 1000);
 
     const country = getCountryConfig(classRecord.country);
-    if (classRecord.currency !== country.currency) throw new Error("This class has an invalid country and currency configuration. Please contact support.");
+    if (!["AUD", "NZD"].includes(classRecord.currency)) throw new Error("This class has an unsupported currency. Please contact support.");
     const identifier = input.professionalIdentifier?.trim() || null;
     const identifierValidation = professionalIdentifierSchema(classRecord.country, classRecord.professionalIdentifierRequired).safeParse(identifier ?? "");
     if (!identifierValidation.success) throw new Error(identifierValidation.error.issues[0]?.message ?? "Enter the professional identifier in the requested format.");
