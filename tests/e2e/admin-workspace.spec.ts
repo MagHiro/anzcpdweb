@@ -29,6 +29,14 @@ test("source editor validates, saves with feedback, and deletes with confirmatio
   await page.getByRole("button", { name: "New reference", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveCSS("transform", "none");
+  const modalBox = await dialog.boundingBox();
+  expect(modalBox!.width).toBeGreaterThan(800);
+  const authorityBox = await dialog.getByLabel("Authority", { exact: false }).boundingBox();
+  const titleBox = await dialog.getByLabel("Title", { exact: false }).boundingBox();
+  expect(authorityBox!.y).toBe(titleBox!.y);
+  expect(authorityBox!.height).toBe(48);
+  expect(await dialog.getByLabel("Jurisdiction", { exact: false }).evaluate(element => getComputedStyle(element).appearance)).toBe("none");
   const title = `Browser reference ${Date.now()}`;
   await dialog.getByLabel("Authority", { exact: false }).fill("Local test authority");
   await dialog.getByLabel("Title", { exact: false }).fill(title);

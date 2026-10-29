@@ -100,14 +100,14 @@ export function Field({ label, hint, error, children, required = false, classNam
   const errorId = error ? `${controlId}-error` : undefined;
   const describedBy = [childProps["aria-describedby"], hintId, errorId].filter(Boolean).join(" ") || undefined;
   const control = isValidElement(child) ? cloneElement(child as ReactElement<{ id?: string; "aria-describedby"?: string; "aria-invalid"?: boolean }>, { id: controlId, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined }) : child;
-  return <div className={cn("space-y-2", className)}><label htmlFor={controlId} className="block text-sm font-bold text-[var(--ink)]">{label}{required ? <span aria-hidden="true" className="ml-1 text-[var(--signal)]">*</span> : null}</label>{hint ? <p id={hintId} className="text-xs leading-5 text-[var(--muted)]">{hint}</p> : null}{control}{error ? <p id={errorId} className="text-sm text-[var(--error)]" role="alert">{error}</p> : null}</div>;
+  return <div className={cn("form-field", className)}><label htmlFor={controlId} className="block text-sm font-semibold text-[var(--ink)]">{label}{required ? <span aria-hidden="true" className="ml-1 text-[var(--signal)]">*</span> : null}</label>{control}{hint ? <p id={hintId} className="text-xs leading-5 text-[var(--muted)]">{hint}</p> : null}{error ? <p id={errorId} className="text-sm text-[var(--error)]" role="alert">{error}</p> : null}</div>;
 }
 
-export const inputClassName = "focus-ring min-h-12 w-full rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm text-[var(--color-ink)] outline-none transition placeholder:text-[var(--color-subtle)] focus:border-[#9b60aa] focus:bg-white";
+export const inputClassName = "form-control focus-ring min-h-12 w-full min-w-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm text-[var(--color-ink)] outline-none transition placeholder:text-[var(--color-subtle)] focus:border-[var(--forest)] focus:bg-white";
 
 export function TextInput({ className, ...props }: ComponentProps<"input">) { return <input className={cn(inputClassName, className)} {...props} />; }
 export function TextArea({ className, ...props }: ComponentProps<"textarea">) { return <textarea className={cn(inputClassName, "min-h-32 py-3", className)} {...props} />; }
-export function Select({ className, ...props }: ComponentProps<"select">) { return <select className={cn(inputClassName, "appearance-auto", className)} {...props} />; }
+export function Select({ className, ...props }: ComponentProps<"select">) { return <select className={cn(inputClassName, "form-select", className)} {...props} />; }
 
 export function FormNotice({ children, tone = "error", className }: { children?: ReactNode; tone?: "error" | "success" | "info"; className?: string }) {
   return <FeedbackNotice tone={tone} className={className}>{children}</FeedbackNotice>;

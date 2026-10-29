@@ -141,6 +141,33 @@ input:focus, select:focus, textarea:focus { border-color: #9b60aa; }
 
 /* Operational layouts share the same type, rules and flat surface language. */
 .workspace { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100dvh; background: white; }
+.form-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; align-self: start; }
+.form-field > label { min-height: 20px; line-height: 20px; }
+.form-control { box-sizing: border-box; color-scheme: light; box-shadow: 0 1px 2px #182c2010; }
+input.form-control, select.form-control:not([multiple]) { height: 48px; }
+.form-control:hover:not(:disabled) { border-color: #9aafa0; }
+.form-control:focus { box-shadow: 0 0 0 3px #244c3b18; }
+.form-control[aria-invalid=true] { border-color: var(--error); background: #fffafa; }
+.form-control:disabled { background: #f1f3ef; color: #6c766e; cursor: not-allowed; opacity: .75; }
+.form-control[readonly] { background: #f5f7f3; }
+textarea.form-control { resize: vertical; line-height: 1.65; min-height: 144px; }
+select.form-select:not([multiple]) { appearance: none; padding-right: 42px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23244c3b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; }
+select[multiple].form-control { min-height: 144px; padding: 8px; }
+select[multiple] option { padding: 10px 12px; border-radius: 5px; }
+select[multiple] option:checked { background: #e5eee7; color: #244c3b; }
+input:is([type=date], [type=datetime-local], [type=time]).form-control { font-variant-numeric: tabular-nums; }
+input.form-control::-webkit-calendar-picker-indicator { cursor: pointer; padding: 7px; border-radius: 5px; background-color: #edf3e9; }
+input.form-control::-webkit-date-and-time-value { text-align: left; }
+input[type=file]::file-selector-button { border: 0; background: #e5eee7; color: #244c3b; padding: 8px 12px; border-radius: 6px; margin-right: 12px; cursor: pointer; font-weight: 600; }
+input:is([type=checkbox], [type=radio]) { accent-color: #244c3b; width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; }
+input:is([type=checkbox], [type=radio]):focus-visible { outline: 2px solid #244c3b; outline-offset: 3px; }
+label:has(> input[type=checkbox]):has(> span) { align-items: flex-start; }
+label:has(> input[type=checkbox]:checked):has(> span) { border-color: #8eae96; background-color: #edf4e9; }
+.admin-dialog[open] { display: flex; flex-direction: column; }
+.admin-dialog > header { flex-shrink: 0; }
+.admin-dialog-body { min-height: 0; max-height: calc(94dvh - 110px); overscroll-behavior: contain; scrollbar-gutter: stable; }
+.admin-dialog::backdrop { background: #10291f70; backdrop-filter: blur(3px); }
+@media (max-width: 640px) { .form-control { font-size: 16px; } .admin-dialog { width: calc(100% - 16px); } }
 .workspace-sidebar { background: #f7f7f4; border-right: 1px solid var(--line); padding: 28px 16px 20px; position: sticky; top: 0; height: 100dvh; overflow-y: auto; display: flex; flex-direction: column; }
 .workspace-brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 32px; color: var(--forest); }
 .workspace-symbol { display: grid; place-items: center; flex: none; position: relative; width: 42px; height: 42px; border-radius: 8px; background: var(--forest); color: white; font-size: 1.35rem; }
