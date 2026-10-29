@@ -36,7 +36,10 @@ test("source editor validates, saves with feedback, and deletes with confirmatio
   const titleBox = await dialog.getByLabel("Title", { exact: false }).boundingBox();
   expect(authorityBox!.y).toBe(titleBox!.y);
   expect(authorityBox!.height).toBe(48);
-  expect(await dialog.getByLabel("Jurisdiction", { exact: false }).evaluate(element => getComputedStyle(element).appearance)).toBe("none");
+  expect(await dialog.getByLabel("Jurisdiction", { exact: false }).evaluate(element => getComputedStyle(element).appearance)).toBe("base-select");
+  await dialog.getByLabel("Jurisdiction", { exact: false }).click();
+  await expect(dialog.getByRole("option", { name: "New Zealand", exact: true })).toHaveCSS("border-radius", "7px");
+  await page.keyboard.press("Escape");
   const title = `Browser reference ${Date.now()}`;
   await dialog.getByLabel("Authority", { exact: false }).fill("Local test authority");
   await dialog.getByLabel("Title", { exact: false }).fill(title);

@@ -155,6 +155,20 @@ select.form-select:not([multiple]) { appearance: none; padding-right: 42px; back
 select[multiple].form-control { min-height: 144px; padding: 8px; }
 select[multiple] option { padding: 10px 12px; border-radius: 5px; }
 select[multiple] option:checked { background: #e5eee7; color: #244c3b; }
+/* Customizable native selects retain browser keyboard, validation and form semantics. */
+@supports (appearance: base-select) {
+  select.form-select:not([multiple]),
+  select.form-select:not([multiple])::picker(select) { appearance: base-select; }
+  select.form-select:not([multiple]) { background-image: none; padding-right: 16px; display: flex; align-items: center; gap: 12px; }
+  select.form-select::picker-icon { color: var(--forest); margin-left: auto; transition: rotate .18s ease; }
+  select.form-select:open::picker-icon { rotate: 180deg; }
+  select.form-select::picker(select) { border: 1px solid #ccd8cd; border-radius: 12px; padding: 6px; margin-block: 6px; background: white; color: var(--ink); box-shadow: 0 12px 36px #132c2126; max-height: min(360px, 50dvh); overflow-y: auto; overscroll-behavior: contain; font: inherit; }
+  select.form-select option { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 10px 12px; border-radius: 7px; white-space: normal; overflow-wrap: anywhere; font-size: 14px; line-height: 1.5; cursor: pointer; }
+  select.form-select option:hover, select.form-select option:focus { background: #f0f5ec; color: var(--forest); outline: none; }
+  select.form-select option:checked { background: #e5eee7; color: var(--forest); font-weight: 600; }
+  select.form-select option::checkmark { color: var(--forest); }
+  select.form-select option:disabled { color: #859087; cursor: not-allowed; }
+}
 input:is([type=date], [type=datetime-local], [type=time]).form-control { font-variant-numeric: tabular-nums; }
 input.form-control::-webkit-calendar-picker-indicator { cursor: pointer; padding: 7px; border-radius: 5px; background-color: #edf3e9; }
 input.form-control::-webkit-date-and-time-value { text-align: left; }
