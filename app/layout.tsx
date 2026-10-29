@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Google_Sans_Flex } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import { AppChrome } from "@/components/app-chrome";
 import "./globals.css";
 
-const googleSansFlex = Google_Sans_Flex({
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   fallback: ["Arial", "sans-serif"],
   adjustFontFallback: false,
 });
+const display = Space_Grotesk({ subsets: ["latin"], display: "swap", variable: "--font-display", weight: "400" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
@@ -19,5 +20,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en-AU" className={googleSansFlex.className} data-scroll-behavior="smooth"><body><AppChrome>{children}</AppChrome></body></html>;
+  return <html lang="en-AU" className={`${inter.className} ${display.variable}`} data-scroll-behavior="smooth"><body><AppChrome>{children}</AppChrome></body></html>;
 }

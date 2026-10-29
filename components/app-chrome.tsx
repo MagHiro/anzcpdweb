@@ -2,7 +2,6 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
-import { SiteMotion } from "@/components/animations";
 
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -12,6 +11,5 @@ export function AppChrome({ children }: { children: ReactNode }) {
     {!workspace && <SiteHeader />}
     <main id="main-content" tabIndex={-1}>{children}</main>
     {!workspace && <SiteFooter />}
-    <SiteMotion pathname={pathname} />
   </div>;
 }

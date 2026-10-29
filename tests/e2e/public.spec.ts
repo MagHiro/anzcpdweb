@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test("public visitor can move through country and catalogue navigation", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/ANZ CPD/);
-  await page.getByRole("link", { name: "Choose a country" }).click();
+  await page.getByRole("link", { name: "Explore Australia", exact: true }).click();
   await expect(page).toHaveURL(/\/australia/);
   await expect(page.getByRole("heading", { name: /Australian migration practice/ })).toBeVisible();
 });
