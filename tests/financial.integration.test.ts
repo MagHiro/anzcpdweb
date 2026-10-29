@@ -6,7 +6,7 @@ import { getDb } from "@/lib/db";
 import { accountClaimTokens, bookings, categories, classes, countries, payments, refunds, user } from "@/db/schema";
 import { completeAccountLink, createAccountToken } from "@/server/auth/tokens";
 import { markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
-import { cancelClass } from "@/server/catalogue/service";
+import { cancelClass, deleteSourceReference, replaceClassSources, saveSourceReference } from "@/server/catalogue/service";
 import { syncPaymentRefundTotals, syncRefundFromStripe } from "@/server/payments/refunds";
 
 describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests", () => {
@@ -51,6 +51,18 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     await cancelClass(record.id);
     expect((await db.select().from(bookings).where(eq(bookings.id, booking.id)))[0].status).toBe("CANCELLED");
     expect((await db.select().from(classes).where(eq(classes.id, record.id)))[0].status).toBe("CANCELLED");
+  });
+
+  it("protects references attached to a class from deletion", async () => {
+    const { record } = await fixture();
+    const source = await saveSourceReference({ authority: "Test", title: "Protected reference", url: "https://example.com", jurisdiction: "AU", checkedAt: new Date() });
+    try {
+      await replaceClassSources(record.id, [source.id]);
+      await expect(deleteSourceReference(source.id)).rejects.toThrow("attached to a class");
+    } finally {
+      await replaceClassSources(record.id, []);
+      await deleteSourceReference(source.id);
+    }
   });
 
   it("ignores terminal events from an old Checkout attempt", async () => {

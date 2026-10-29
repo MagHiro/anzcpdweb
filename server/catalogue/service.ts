@@ -85,6 +85,17 @@ export async function archivePresenter(id: string) {
   return updated;
 }
 
+export async function deleteSourceReference(id: string) {
+  return getDb().transaction(async tx => {
+    const [source] = await tx.select().from(sourceReferences).where(eq(sourceReferences.id, id)).for("update").limit(1);
+    if (!source) throw new Error("Source reference not found.");
+    const [link] = await tx.select({ classId: classSourceReferences.classId }).from(classSourceReferences).where(eq(classSourceReferences.sourceReferenceId, id)).limit(1);
+    if (link) throw new Error("This reference is attached to a class. Remove it from the class before deleting it.");
+    await tx.delete(sourceReferences).where(eq(sourceReferences.id, id));
+    return source;
+  });
+}
+
 export async function saveSourceReference(input: {
   id?: string;
   authority: string;

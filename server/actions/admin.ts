@@ -12,6 +12,7 @@ import { createAdminRefund } from "@/server/payments/refunds";
 import { getDb } from "@/lib/db";
 import { eq, inArray } from "drizzle-orm";
 import { categories } from "@/db/schema";
+import { deleteSourceReference } from "@/server/catalogue/service";
 
 export type AdminActionState = { ok: boolean; message?: string; fieldErrors?: Record<string, string>; id?: string };
 
@@ -78,6 +79,20 @@ export async function archivePresenterAction(formData: FormData): Promise<AdminA
     return { ok: true, message: "Presenter archived." };
   } catch (error) {
     return { ok: false, message: safeErrorMessage(error, "Presenter could not be archived.") };
+  }
+}
+
+export async function deleteSourceReferenceAction(formData: FormData): Promise<AdminActionState> {
+  const session = await requireAdminSession();
+  const id = uuidSchema.safeParse(formData.get("id"));
+  if (!id.success) return { ok: false, message: "Source reference id is invalid." };
+  try {
+    const source = await deleteSourceReference(id.data);
+    await writeAuditLog({ actorUserId: session.user.id, action: "SOURCE_REFERENCE_DELETED", entityType: "source_reference", entityId: source.id, metadata: { title: source.title, authority: source.authority, url: source.url, jurisdiction: source.jurisdiction } });
+    revalidatePath("/admin/source-references");
+    return { ok: true, message: "Source reference deleted." };
+  } catch (error) {
+    return { ok: false, message: safeErrorMessage(error, "Source reference could not be deleted.") };
   }
 }
 
