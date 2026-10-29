@@ -9,7 +9,7 @@ type NavGroup = { label: string; links: NavItem[] };
 const adminGroups: NavGroup[] = [
   { label: "Workspace", links: [{ href: "/admin", label: "Overview", icon: "grid" }] },
   { label: "Learning", links: [{ href: "/admin/classes", label: "Classes", icon: "book" }, { href: "/admin/categories", label: "Categories", icon: "grid" }, { href: "/admin/presenters", label: "Presenters", icon: "users" }, { href: "/admin/source-references", label: "Source references", icon: "file" }] },
-  { label: "Operations", links: [{ href: "/admin/bookings", label: "Bookings", icon: "calendar" }, { href: "/admin/customers", label: "Customers", icon: "users" }, { href: "/admin/complaints", label: "Complaints", icon: "message" }] },
+  { label: "Operations", links: [{ href: "/admin/operations", label: "Queues", icon: "grid" }, { href: "/admin/bookings", label: "Bookings", icon: "calendar" }, { href: "/admin/customers", label: "Customers", icon: "users" }, { href: "/admin/complaints", label: "Complaints", icon: "message" }] },
   { label: "Finance", links: [{ href: "/admin/payments", label: "Payments", icon: "money" }, { href: "/admin/refunds", label: "Refunds", icon: "money" }] },
   { label: "System", links: [{ href: "/admin/audit-log", label: "Audit log", icon: "shield" }, { href: "/admin/settings", label: "Settings", icon: "settings" }] },
 ];

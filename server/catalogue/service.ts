@@ -268,6 +268,7 @@ export async function cancelClass(id: string) {
     const [updated] = await tx.update(classes).set({ status: "CANCELLED", updatedAt: new Date() }).where(eq(classes.id, id)).returning();
     if (!updated) throw new Error("Class not found.");
     const affected = await tx.select({ id: bookings.id, userId: bookings.userId, email: bookings.email, fullName: bookings.fullName, classTitle: bookings.classTitleSnapshot }).from(bookings).where(and(eq(bookings.classId, id), inArray(bookings.status, ["PENDING_PAYMENT", "PAYMENT_PROCESSING", "CONFIRMED", "PARTIALLY_REFUNDED"] as const)));
+    await tx.update(bookings).set({ status: "CANCELLED", cancelledAt: new Date(), seatReservationExpiresAt: null, updatedAt: new Date() }).where(and(eq(bookings.classId, id), inArray(bookings.status, ["PENDING_PAYMENT", "PAYMENT_PROCESSING", "CONFIRMED", "PARTIALLY_REFUNDED"] as const)));
     return { classRecord: updated, affected };
   });
   const env = getServerEnv();

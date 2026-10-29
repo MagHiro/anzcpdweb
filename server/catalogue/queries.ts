@@ -261,7 +261,7 @@ export async function getCustomerBookings(userId: string) {
 }
 
 export async function getCustomerBookingById(userId: string, bookingId: string) {
-  const [row] = await getDb().select({ booking: bookings, classTitle: classes.title, classSlug: classes.slug, startAt: classes.startAt, endAt: classes.endAt, timezone: classes.timezone, deliveryFormat: classes.deliveryFormat, venueName: classes.venueName, onlineAttendanceInfo: classes.onlineAttendanceInfo, categoryName: categories.name }).from(bookings).innerJoin(classes, eq(bookings.classId, classes.id)).innerJoin(categories, eq(classes.categoryId, categories.id)).where(and(eq(bookings.id, bookingId), eq(bookings.userId, userId))).limit(1);
+  const [row] = await getDb().select({ booking: bookings, payment: payments, classTitle: classes.title, classSlug: classes.slug, startAt: classes.startAt, endAt: classes.endAt, timezone: classes.timezone, deliveryFormat: classes.deliveryFormat, venueName: classes.venueName, onlineAttendanceInfo: classes.onlineAttendanceInfo, categoryName: categories.name }).from(bookings).innerJoin(classes, eq(bookings.classId, classes.id)).innerJoin(categories, eq(classes.categoryId, categories.id)).leftJoin(payments, eq(payments.bookingId, bookings.id)).where(and(eq(bookings.id, bookingId), eq(bookings.userId, userId))).limit(1);
   return row ?? null;
 }
 

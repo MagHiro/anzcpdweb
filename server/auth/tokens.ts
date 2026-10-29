@@ -56,3 +56,18 @@ export async function linkVerifiedEmailBookings(email: string, userId: string): 
 export async function markUserEmailVerified(userId: string): Promise<void> {
   await getDb().update(user).set({ emailVerified: true, updatedAt: new Date() }).where(eq(user.id, userId));
 }
+
+/** Consume proof and apply ownership in one transaction, so a failed write can be retried. */
+export async function completeAccountLink(rawToken: string, purpose: "ACCOUNT_SETUP" | "ACCOUNT_CLAIM", email: string, userId: string) {
+  return getDb().transaction(async tx => {
+    const [token] = await tx.select().from(accountClaimTokens).where(and(eq(accountClaimTokens.tokenHash, hashToken(rawToken)), eq(accountClaimTokens.purpose, purpose), eq(accountClaimTokens.email, email.toLowerCase()), gt(accountClaimTokens.expiresAt, new Date()))).for("update").limit(1);
+    if (!token) return null;
+    const [owner] = await tx.select().from(user).where(and(eq(user.id, userId), eq(user.email, token.email))).for("update").limit(1);
+    if (!owner || (purpose === "ACCOUNT_CLAIM" && !owner.emailVerified)) return null;
+    // An already-used proof is safe to retry only for this same authenticated owner.
+    const linked = await tx.update(bookings).set({ userId, updatedAt: new Date() }).where(and(eq(bookings.email, token.email), isNull(bookings.userId))).returning({ id: bookings.id });
+    if (purpose === "ACCOUNT_SETUP") await tx.update(user).set({ emailVerified: true, updatedAt: new Date() }).where(eq(user.id, userId));
+    if (!token.usedAt) await tx.update(accountClaimTokens).set({ usedAt: new Date(), updatedAt: new Date() }).where(eq(accountClaimTokens.id, token.id));
+    return { linked: linked.length };
+  });
+}

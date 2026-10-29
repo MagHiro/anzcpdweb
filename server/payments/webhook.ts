@@ -40,18 +40,13 @@ export async function processStripeEvent(event: Stripe.Event): Promise<{ duplica
         const charge = event.data.object as Stripe.Charge;
         const paymentIntentId = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
         if (paymentIntentId) {
-          const stripeRefunds = await (await import("@/server/payments/stripe")).getStripe().refunds.list({ charge: charge.id, limit: 100 });
-          for (const refund of stripeRefunds.data) await syncRefundFromStripe(refund);
+          for await (const refund of (await import("@/server/payments/stripe")).getStripe().refunds.list({ charge: charge.id, limit: 100 })) await syncRefundFromStripe(refund);
         }
         break;
       }
       case "payment_intent.payment_failed": {
-        const intent = event.data.object as Stripe.PaymentIntent;
-        const bookingId = intent.metadata?.bookingId;
-        if (bookingId) {
-          const session = { metadata: { bookingId }, client_reference_id: bookingId } as unknown as Stripe.Checkout.Session;
-          await markCheckoutPaymentFailed(session);
-        }
+        // A failed card attempt does not close Checkout: the customer can retry
+        // within that same session. Only terminal Checkout events release seats.
         break;
       }
       default:

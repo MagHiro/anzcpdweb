@@ -7,6 +7,9 @@ import { getServerEnv } from "@/lib/env";
 import { getStripe } from "@/server/payments/stripe";
 import { queueEmail } from "@/server/email/service";
 import { assertBookingTransition } from "@/server/bookings/transitions";
+import { remainingRefundableAmount } from "@/server/payments/refund-policy";
+import { refreshCapacityStatus } from "@/server/bookings/service";
+import { classes } from "@/db/schema";
 
 function mapRefundStatus(status: string | null): "PENDING" | "SUCCEEDED" | "FAILED" | "REQUIRES_ACTION" | "CANCELLED" {
   if (status === "succeeded") return "SUCCEEDED";
@@ -19,17 +22,25 @@ function mapRefundStatus(status: string | null): "PENDING" | "SUCCEEDED" | "FAIL
 async function refundableAmount(paymentId: string, tx = getDb()): Promise<number> {
   const [payment] = await tx.select({ captured: payments.amountCaptured, refunded: payments.amountRefunded }).from(payments).where(eq(payments.id, paymentId)).limit(1);
   if (!payment) return 0;
-  const [pending] = await tx.select({ amount: sql<number>`coalesce(sum(${refunds.amount}), 0)::int` }).from(refunds).where(and(eq(refunds.paymentId, paymentId), inArray(refunds.status, ["PENDING", "REQUIRES_ACTION", "SUCCEEDED"] as const)));
-  return Math.max(payment.captured - payment.refunded - Number(pending?.amount ?? 0), 0);
+  const [pending] = await tx.select({ amount: sql<number>`coalesce(sum(${refunds.amount}), 0)::int` }).from(refunds).where(and(eq(refunds.paymentId, paymentId), inArray(refunds.status, ["PENDING", "REQUIRES_ACTION"] as const)));
+  return remainingRefundableAmount(payment.captured, payment.refunded, Number(pending?.amount ?? 0));
 }
 
 export async function createAdminRefund(input: { bookingId: string; amount: number; reason: string; internalNote?: string; idempotencyKey: string; adminUserId: string }) {
+  if (!Number.isSafeInteger(input.amount) || input.amount <= 0) throw new Error("Refund amount must be a positive integer in minor currency units.");
   const db = getDb();
   const existing = await db.select().from(refunds).where(eq(refunds.requestIdempotencyKey, input.idempotencyKey)).limit(1);
-  if (existing[0]) return existing[0];
+  if (existing[0] && (existing[0].bookingId !== input.bookingId || existing[0].amount !== input.amount)) throw new Error("This refund request key belongs to a different refund.");
+  if (existing[0]?.stripeRefundId || (existing[0] && existing[0].status !== "PENDING")) return existing[0];
   const pending = await db.transaction(async (tx) => {
     const [row] = await tx.select({ booking: bookings, payment: payments }).from(bookings).innerJoin(payments, eq(bookings.id, payments.bookingId)).where(eq(bookings.id, input.bookingId)).for("update").limit(1);
     if (!row) throw new Error("Paid booking not found.");
+    const [retry] = await tx.select().from(refunds).where(eq(refunds.requestIdempotencyKey, input.idempotencyKey)).limit(1);
+    if (retry) {
+      if (retry.bookingId !== input.bookingId || retry.amount !== input.amount) throw new Error("This refund request key belongs to a different refund.");
+      if (!row.payment.stripePaymentIntentId) throw new Error("Payment reference is missing.");
+      return { refund: retry, paymentIntentId: row.payment.stripePaymentIntentId };
+    }
     if (!["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(row.payment.status)) throw new Error("This booking does not have a captured payment available for refund.");
     if (!row.payment.stripePaymentIntentId) throw new Error("This payment has no refundable Stripe payment reference.");
     const available = await refundableAmount(row.payment.id, tx);
@@ -52,9 +63,7 @@ export async function createAdminRefund(input: { bookingId: string; amount: numb
     throw new Error("We couldn't confirm the refund request state. Do not submit another refund; wait for Stripe to report the result or ask an administrator to reconcile it.");
   }
   try {
-    const [updated] = await db.update(refunds).set({ stripeRefundId: stripeRefund.id, status: mapRefundStatus(stripeRefund.status), updatedAt: new Date() }).where(eq(refunds.id, pending.refund.id)).returning();
-    if (updated && stripeRefund.status === "succeeded") await syncPaymentRefundTotals(updated.bookingId);
-    return updated ?? pending.refund;
+    return await syncRefundFromStripe(stripeRefund) ?? pending.refund;
   } catch {
     throw new Error("Stripe accepted the refund request, but the local state is still being synchronized. Do not submit another refund; wait for the Stripe webhook.");
   }
@@ -64,20 +73,29 @@ export async function syncRefundFromStripe(stripeRefund: Stripe.Refund) {
   const db = getDb();
   const bookingId = typeof stripeRefund.metadata?.bookingId === "string" ? stripeRefund.metadata.bookingId : undefined;
   let local = stripeRefund.id ? (await db.select().from(refunds).where(eq(refunds.stripeRefundId, stripeRefund.id)).limit(1))[0] : undefined;
-  if (!local && bookingId) {
-    local = (await db.select().from(refunds).where(and(eq(refunds.bookingId, bookingId), eq(refunds.amount, stripeRefund.amount))).orderBy(refunds.createdAt).limit(1))[0];
+  const localRefundId = stripeRefund.metadata?.localRefundId;
+  if (!local && localRefundId) {
+    local = (await db.select().from(refunds).where(eq(refunds.id, localRefundId)).limit(1))[0];
+    if (!local) throw new Error("Stripe references an unknown local refund.");
   }
   if (!local) {
     const paymentIntentId = typeof stripeRefund.payment_intent === "string" ? stripeRefund.payment_intent : stripeRefund.payment_intent?.id;
     if (paymentIntentId) {
       const [payment] = await db.select().from(payments).where(eq(payments.stripePaymentIntentId, paymentIntentId)).limit(1);
       if (payment) {
+        if (payment.currency !== stripeRefund.currency.toUpperCase() || (bookingId && bookingId !== payment.bookingId)) throw new Error("Stripe refund does not match the local payment.");
         local = (await db.insert(refunds).values({ bookingId: payment.bookingId, paymentId: payment.id, stripeRefundId: stripeRefund.id, amount: stripeRefund.amount, currency: stripeRefund.currency.toUpperCase(), status: mapRefundStatus(stripeRefund.status), reason: stripeRefund.reason ?? "Stripe refund", requestIdempotencyKey: `stripe-event:${stripeRefund.id}` }).onConflictDoNothing({ target: refunds.stripeRefundId }).returning())[0];
+        if (!local) local = (await db.select().from(refunds).where(eq(refunds.stripeRefundId, stripeRefund.id)).limit(1))[0];
       }
     }
   }
-  if (!local) return null;
-  const [updated] = await db.update(refunds).set({ stripeRefundId: stripeRefund.id, status: mapRefundStatus(stripeRefund.status), failureMessage: stripeRefund.failure_reason ?? null, updatedAt: new Date() }).where(eq(refunds.id, local.id)).returning();
+  if (!local) throw new Error("Stripe refund payment is not yet available for reconciliation.");
+  const [payment] = await db.select().from(payments).where(eq(payments.id, local.paymentId)).limit(1);
+  const paymentIntentId = typeof stripeRefund.payment_intent === "string" ? stripeRefund.payment_intent : stripeRefund.payment_intent?.id;
+  if (!payment || !paymentIntentId || payment.stripePaymentIntentId !== paymentIntentId || local.amount !== stripeRefund.amount || local.currency !== stripeRefund.currency.toUpperCase() || (bookingId && local.bookingId !== bookingId) || (local.stripeRefundId && local.stripeRefundId !== stripeRefund.id)) throw new Error("Stripe refund does not match the local refund and payment references.");
+  if (local.status === "SUCCEEDED" && stripeRefund.status !== "succeeded") return local;
+  // The conditional write protects against a stale event racing a success event.
+  const [updated] = await db.update(refunds).set({ stripeRefundId: stripeRefund.id, status: mapRefundStatus(stripeRefund.status), failureMessage: stripeRefund.failure_reason ?? null, updatedAt: new Date() }).where(and(eq(refunds.id, local.id), stripeRefund.status === "succeeded" ? undefined : sql`${refunds.status} <> 'SUCCEEDED'`, sql`(${refunds.stripeRefundId} is null or ${refunds.stripeRefundId} = ${stripeRefund.id})`)).returning();
   if (updated) await syncPaymentRefundTotals(updated.bookingId);
   return updated ?? local;
 }
@@ -85,18 +103,23 @@ export async function syncRefundFromStripe(stripeRefund: Stripe.Refund) {
 export async function syncPaymentRefundTotals(bookingId: string) {
   const db = getDb();
   const result = await db.transaction(async (tx) => {
+    const [reference] = await tx.select({ classId: bookings.classId }).from(bookings).where(eq(bookings.id, bookingId)).limit(1);
+    if (reference) await tx.select({ id: classes.id }).from(classes).where(eq(classes.id, reference.classId)).for("update");
     const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update").limit(1);
     if (!booking) return null;
     const [payment] = await tx.select().from(payments).where(eq(payments.bookingId, bookingId)).for("update").limit(1);
     if (!payment) return null;
     const [totals] = await tx.select({ refunded: sql<number>`coalesce(sum(${refunds.amount}) filter (where ${refunds.status} = 'SUCCEEDED'), 0)::int` }).from(refunds).where(eq(refunds.paymentId, payment.id));
     const refundedAmount = Number(totals?.refunded ?? 0);
-    const nextPaymentStatus = refundedAmount >= payment.amountCaptured ? "REFUNDED" : refundedAmount > 0 ? "PARTIALLY_REFUNDED" : payment.status;
-    const nextBookingStatus = refundedAmount >= payment.amountCaptured ? "REFUNDED" : refundedAmount > 0 ? "PARTIALLY_REFUNDED" : booking.status;
+    const fullyRefunded = payment.amountCaptured > 0 && refundedAmount >= payment.amountCaptured;
+    const nextPaymentStatus = fullyRefunded ? "REFUNDED" : refundedAmount > 0 ? "PARTIALLY_REFUNDED" : payment.status;
+    // Partial reimbursement must never restore attendance for a cancelled booking.
+    const nextBookingStatus = fullyRefunded ? "REFUNDED" : refundedAmount > 0 && booking.status !== "CANCELLED" ? "PARTIALLY_REFUNDED" : booking.status;
     await tx.update(payments).set({ amountRefunded: refundedAmount, status: nextPaymentStatus, updatedAt: new Date() }).where(eq(payments.id, payment.id));
     if (nextBookingStatus !== booking.status) {
       assertBookingTransition(booking.status, nextBookingStatus);
       await tx.update(bookings).set({ status: nextBookingStatus, updatedAt: new Date() }).where(eq(bookings.id, booking.id));
+      await refreshCapacityStatus(tx, booking.classId, new Date());
     }
     const [current] = await tx.select().from(refunds).where(eq(refunds.bookingId, bookingId)).orderBy(sql`${refunds.createdAt} desc`).limit(1);
     return { booking, current };

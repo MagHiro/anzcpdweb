@@ -1,5 +1,5 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
-import { bookings, classes, emailOutbox, payments } from "@/db/schema";
+import { auditLogs, bookings, classes, emailOutbox, payments } from "@/db/schema";
 import { getCountryConfig } from "@/lib/domain/countries";
 import { professionalIdentifierSchema } from "@/lib/validation";
 import { getDb, type Database } from "@/lib/db";
@@ -15,6 +15,11 @@ const seatHoldingStatuses = ["CONFIRMED", "PARTIALLY_REFUNDED"] as const;
 
 type Transaction = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
 type QueryExecutor = Database | Transaction;
+
+async function lockBookingClass(tx: Transaction, bookingId: string) {
+  const [reference] = await tx.select({ classId: bookings.classId }).from(bookings).where(eq(bookings.id, bookingId)).limit(1);
+  if (reference) await tx.select({ id: classes.id }).from(classes).where(eq(classes.id, reference.classId)).for("update");
+}
 
 export type CreateCheckoutInput = {
   classSlug: string;
@@ -41,7 +46,7 @@ async function activeSeatCount(tx: QueryExecutor, classId: string): Promise<numb
   return Number(row?.count ?? 0);
 }
 
-async function refreshCapacityStatus(tx: QueryExecutor, classId: string, now: Date): Promise<void> {
+export async function refreshCapacityStatus(tx: QueryExecutor, classId: string, now: Date): Promise<void> {
   const [classRecord] = await tx.select().from(classes).where(eq(classes.id, classId)).for("update").limit(1);
   if (!classRecord || classRecord.unlimitedCapacity || !classRecord.seatCapacity) return;
   const seats = await activeSeatCount(tx, classId);
@@ -53,15 +58,22 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
   const db = getDb();
   const createAccountRequested = !input.userId && input.createAccountRequested;
   const existing = await db.select().from(bookings).where(eq(bookings.idempotencyKey, input.idempotencyKey)).limit(1);
-  if (existing[0] && ["CONFIRMED", "PAYMENT_PROCESSING"].includes(existing[0].status)) throw new Error("This booking is already being processed. Check your account before trying to pay again.");
+  if (existing[0] && (existing[0].email !== input.email.toLowerCase() || existing[0].userId !== (input.userId ?? null))) throw new Error("This booking request belongs to a different attendee or account.");
+  if (existing[0] && ["CONFIRMED", "PARTIALLY_REFUNDED", "REFUNDED", "CANCELLED", "PAYMENT_PROCESSING"].includes(existing[0].status)) throw new Error("This booking is already being processed or is closed. Check your account before trying to pay again.");
   if (existing[0]?.stripeCheckoutSessionId) {
+    const [activity] = await db.select().from(classes).where(eq(classes.id, existing[0].classId)).limit(1);
+    if (!activity || activity.slug !== input.classSlug || !["PUBLISHED", "SOLD_OUT"].includes(activity.status)) throw new Error("This class is no longer available for booking.");
     const session = await getStripe().checkout.sessions.retrieve(existing[0].stripeCheckoutSessionId);
     if (session.status === "open" && session.url) return { booking: existing[0], checkoutUrl: session.url, reused: true };
+    if (session.status === "complete") throw new Error("This checkout has completed. Check your booking before attempting another payment.");
+    if (session.status === "expired") await markCheckoutExpired(session);
   }
 
   const created = await db.transaction(async (tx) => {
+    await tx.select({ id: classes.id }).from(classes).where(eq(classes.slug, input.classSlug)).for("update");
     const [alreadyCreated] = await tx.select().from(bookings).where(eq(bookings.idempotencyKey, input.idempotencyKey)).for("update").limit(1);
     if (alreadyCreated) {
+      if (alreadyCreated.email !== input.email.toLowerCase() || alreadyCreated.userId !== (input.userId ?? null)) throw new Error("This booking request belongs to a different attendee or account.");
       if (["PAYMENT_FAILED", "EXPIRED"].includes(alreadyCreated.status)) {
         const [classRecord] = await tx.select().from(classes).where(eq(classes.id, alreadyCreated.classId)).for("update").limit(1);
         if (!classRecord || !["PUBLISHED", "SOLD_OUT"].includes(classRecord.status)) throw new Error("This class is no longer available for booking.");
@@ -73,8 +85,8 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
           if (!classRecord.seatCapacity || seats >= classRecord.seatCapacity) throw new Error("This class has sold out. Please return to the class page for the latest availability.");
         }
         const reservationExpiresAt = new Date(now.getTime() + 31 * 60 * 1000);
-        const [reopened] = await tx.update(bookings).set({ status: "PENDING_PAYMENT", seatReservationExpiresAt: reservationExpiresAt, expiredAt: null, updatedAt: now }).where(eq(bookings.id, alreadyCreated.id)).returning();
-        await tx.update(payments).set({ status: "PENDING", updatedAt: now }).where(eq(payments.bookingId, alreadyCreated.id));
+        const [reopened] = await tx.update(bookings).set({ status: "PENDING_PAYMENT", stripeCheckoutSessionId: null, stripePaymentIntentId: null, seatReservationExpiresAt: reservationExpiresAt, expiredAt: null, updatedAt: now }).where(eq(bookings.id, alreadyCreated.id)).returning();
+        await tx.update(payments).set({ status: "PENDING", stripeCheckoutSessionId: null, stripePaymentIntentId: null, updatedAt: now }).where(eq(payments.bookingId, alreadyCreated.id));
         await refreshCapacityStatus(tx, classRecord.id, now);
         return reopened ?? alreadyCreated;
       }
@@ -162,7 +174,7 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
         cancel_url: `${env.APP_URL}/booking/cancelled?booking=${created.id}`,
         expires_at: Math.floor((created.seatReservationExpiresAt ?? new Date(Date.now() + 31 * 60 * 1000)).getTime() / 1000),
       },
-      { idempotencyKey: `checkout:${created.id}` },
+      { idempotencyKey: `checkout:${created.id}:${created.seatReservationExpiresAt?.getTime()}` },
     );
     const [updated] = await db.update(bookings).set({ stripeCheckoutSessionId: stripeSession.id, updatedAt: new Date() }).where(eq(bookings.id, created.id)).returning();
     await db.update(payments).set({ stripeCheckoutSessionId: stripeSession.id, updatedAt: new Date() }).where(eq(payments.bookingId, created.id));
@@ -186,6 +198,7 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
     const definitelyRejected = statusCode === 400 || statusCode === 401 || statusCode === 404 || statusCode === 422;
     if (definitelyRejected) {
       await db.transaction(async (tx) => {
+        await lockBookingClass(tx, created.id);
         const [booking] = await tx.select().from(bookings).where(eq(bookings.id, created.id)).for("update").limit(1);
         if (booking && ["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status)) {
           assertBookingTransition(booking.status, "PAYMENT_FAILED");
@@ -207,12 +220,18 @@ export async function markCheckoutCompleted(input: { session: import("stripe").d
   if (!bookingId) throw new Error("Stripe Checkout Session is missing a booking reference.");
   const db = getDb();
   const result = await db.transaction(async (tx) => {
+    const [reference] = await tx.select({ classId: bookings.classId }).from(bookings).where(eq(bookings.id, bookingId)).limit(1);
+    if (!reference) throw new Error("Booking referenced by Stripe was not found.");
+    // Capacity mutations serialize on the class before locking an individual booking.
+    const [classRecord] = await tx.select().from(classes).where(eq(classes.id, reference.classId)).for("update").limit(1);
     const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update").limit(1);
     if (!booking) throw new Error("Booking referenced by Stripe was not found.");
     const [payment] = await tx.select().from(payments).where(eq(payments.bookingId, booking.id)).for("update").limit(1);
     if (!payment) throw new Error("Payment record referenced by Stripe was not found.");
+    if (booking.stripeCheckoutSessionId && session.id !== booking.stripeCheckoutSessionId) throw new Error("Stripe session does not match the current booking checkout.");
     const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
     if (!input.paymentSucceeded) {
+      if (!["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status) || payment.amountCaptured > 0) return { booking, confirmed: false };
       if (booking.status === "PENDING_PAYMENT") assertBookingTransition(booking.status, "PAYMENT_PROCESSING");
       if (["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status)) await tx.update(bookings).set({ status: "PAYMENT_PROCESSING", stripePaymentIntentId: paymentIntentId, updatedAt: new Date() }).where(eq(bookings.id, booking.id));
       await tx.update(payments).set({ status: "PROCESSING", stripePaymentIntentId: paymentIntentId, updatedAt: new Date() }).where(eq(payments.id, payment.id));
@@ -221,14 +240,17 @@ export async function markCheckoutCompleted(input: { session: import("stripe").d
     if (session.amount_total !== payment.amountTotal || session.currency?.toUpperCase() !== payment.currency) throw new Error("Stripe payment amount or currency does not match the booking snapshot.");
     if (["CONFIRMED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(booking.status)) return { booking, confirmed: true };
     const now = new Date();
-    const [classRecord] = await tx.select({ status: classes.status }).from(classes).where(eq(classes.id, booking.classId)).limit(1);
-    const classWasCancelled = classRecord?.status === "CANCELLED";
-    if (booking.status === "CANCELLED" || classWasCancelled) {
+    const classWasCancelled = !classRecord || ["CANCELLED", "ARCHIVED"].includes(classRecord.status);
+    const heldSeat = [...reservationStatuses, ...seatHoldingStatuses].some(status => status === booking.status);
+    const capacityUnavailable = !heldSeat && classRecord && !classRecord.unlimitedCapacity && (await activeSeatCount(tx, booking.classId)) >= (classRecord.seatCapacity ?? 0);
+    if (booking.status === "CANCELLED" || classWasCancelled || capacityUnavailable) {
       if (booking.status !== "CANCELLED") assertBookingTransition(booking.status, "CANCELLED");
       const [cancelledBooking] = booking.status === "CANCELLED"
         ? [booking]
         : await tx.update(bookings).set({ status: "CANCELLED", cancelledAt: booking.cancelledAt ?? now, seatReservationExpiresAt: null, updatedAt: now }).where(eq(bookings.id, booking.id)).returning();
-      await tx.update(payments).set({ status: "SUCCEEDED", amountCaptured: session.amount_total ?? payment.amountTotal, stripePaymentIntentId: paymentIntentId, updatedAt: now }).where(eq(payments.id, payment.id));
+      await tx.update(bookings).set({ stripePaymentIntentId: paymentIntentId, paidAt: booking.paidAt ?? now, updatedAt: now }).where(eq(bookings.id, booking.id));
+      await tx.update(payments).set({ status: payment.amountRefunded > 0 ? "PARTIALLY_REFUNDED" : "SUCCEEDED", amountCaptured: session.amount_total ?? payment.amountTotal, stripePaymentIntentId: paymentIntentId, updatedAt: now }).where(eq(payments.id, payment.id));
+      if (payment.amountCaptured === 0) await tx.insert(auditLogs).values({ action: "CAPTURE_REQUIRES_RECONCILIATION", entityType: "booking", entityId: booking.id, metadata: { reason: capacityUnavailable ? "CAPACITY_UNAVAILABLE" : "BOOKING_OR_CLASS_CANCELLED", stripeCheckoutSessionId: session.id, stripePaymentIntentId: paymentIntentId, amount: session.amount_total, currency: session.currency } });
       return { booking: cancelledBooking ?? booking, confirmed: false };
     }
     assertBookingTransition(booking.status, "CONFIRMED");
@@ -247,8 +269,9 @@ export async function markCheckoutExpired(session: import("stripe").default.Chec
   if (!bookingId) return;
   const db = getDb();
   const updated = await db.transaction(async (tx) => {
+    await lockBookingClass(tx, bookingId);
     const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update").limit(1);
-    if (!booking || !["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status)) return null;
+    if (!booking || !["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status) || session.id !== booking.stripeCheckoutSessionId) return null;
     assertBookingTransition(booking.status, "EXPIRED");
     const now = new Date();
     const [expired] = await tx.update(bookings).set({ status: "EXPIRED", expiredAt: now, seatReservationExpiresAt: null, updatedAt: now }).where(eq(bookings.id, booking.id)).returning();
@@ -264,8 +287,9 @@ export async function markCheckoutPaymentFailed(session: import("stripe").defaul
   if (!bookingId) return;
   const db = getDb();
   return db.transaction(async (tx) => {
+    await lockBookingClass(tx, bookingId);
     const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update").limit(1);
-    if (!booking || !["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status)) return booking ?? null;
+    if (!booking || !["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status) || session.id !== booking.stripeCheckoutSessionId) return booking ?? null;
     assertBookingTransition(booking.status, "PAYMENT_FAILED");
     const now = new Date();
     const [updated] = await tx.update(bookings).set({ status: "PAYMENT_FAILED", seatReservationExpiresAt: null, updatedAt: now }).where(eq(bookings.id, booking.id)).returning();
@@ -281,6 +305,8 @@ async function enqueueBookingFulfilmentEmails(booking: typeof bookings.$inferSel
   const confirmationDedupeKey = `booking-confirmation:${reference}`;
   const [existingConfirmation] = await getDb().select({ id: emailOutbox.id }).from(emailOutbox).where(eq(emailOutbox.dedupeKey, confirmationDedupeKey)).limit(1);
   if (!existingConfirmation) {
+    const [activity] = await getDb().select({ startAt: classes.startAt }).from(classes).where(eq(classes.id, booking.classId)).limit(1);
+    if (!activity) throw new Error("Confirmation activity was not found.");
     const guestAccessToken = booking.userId ? undefined : await createAccountToken({ email: booking.email, purpose: "GUEST_BOOKING_ACCESS", bookingId: booking.id, expiresInMs: 30 * 24 * 60 * 60 * 1000 });
     await queueEmail({
       type: "BOOKING_CONFIRMATION",
@@ -288,7 +314,7 @@ async function enqueueBookingFulfilmentEmails(booking: typeof bookings.$inferSel
       name: booking.fullName,
       bookingReference: reference,
       classTitle: booking.classTitleSnapshot,
-      classDate: formatDateTime(booking.confirmedAt ?? new Date(), booking.timezoneSnapshot),
+      classDate: formatDateTime(activity.startAt, booking.timezoneSnapshot),
       detailUrl: guestAccessToken ? `${env.APP_URL}/booking/confirmation?token=${encodeURIComponent(guestAccessToken)}` : `${env.APP_URL}/account/bookings/${booking.id}`,
       amount: formatMoney(booking.amountSnapshot, booking.currencySnapshot),
     }, confirmationDedupeKey);
@@ -305,13 +331,22 @@ async function enqueueBookingFulfilmentEmails(booking: typeof bookings.$inferSel
 
 export async function cancelPendingBooking(userId: string, bookingId: string) {
   const db = getDb();
+  const [candidate] = await db.select().from(bookings).where(and(eq(bookings.id, bookingId), eq(bookings.userId, userId))).limit(1);
+  if (!candidate) throw new Error("Booking not found.");
+  if (candidate.status !== "PENDING_PAYMENT") throw new Error("Only an unpaid booking can be cancelled here. Processing payments must be reconciled first.");
+  if (candidate.stripeCheckoutSessionId) {
+    const checkout = await getStripe().checkout.sessions.retrieve(candidate.stripeCheckoutSessionId);
+    if (checkout.status === "complete") throw new Error("Checkout has completed. Wait for the payment result before cancelling.");
+    if (checkout.status === "open") await getStripe().checkout.sessions.expire(checkout.id);
+  }
   return db.transaction(async (tx) => {
+    await lockBookingClass(tx, bookingId);
     const [booking] = await tx.select().from(bookings).where(and(eq(bookings.id, bookingId), eq(bookings.userId, userId))).for("update").limit(1);
     if (!booking) throw new Error("Booking not found.");
-    if (!["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status)) throw new Error("Only an unpaid booking can be cancelled here.");
+    if (!["PENDING_PAYMENT", "EXPIRED"].includes(booking.status)) throw new Error("Only an unpaid booking can be cancelled here.");
     assertBookingTransition(booking.status, "CANCELLED");
     const [updated] = await tx.update(bookings).set({ status: "CANCELLED", cancelledAt: new Date(), seatReservationExpiresAt: null, updatedAt: new Date() }).where(eq(bookings.id, booking.id)).returning();
-    await tx.update(payments).set({ status: "FAILED", updatedAt: new Date() }).where(eq(payments.bookingId, booking.id));
+    await tx.update(payments).set({ status: "FAILED", updatedAt: new Date() }).where(and(eq(payments.bookingId, booking.id), eq(payments.status, "PENDING")));
     await refreshCapacityStatus(tx, booking.classId, new Date());
     return updated ?? booking;
   });
@@ -320,13 +355,15 @@ export async function cancelPendingBooking(userId: string, bookingId: string) {
 export async function cancelBookingByAdmin(bookingId: string) {
   const db = getDb();
   const updated = await db.transaction(async (tx) => {
+    await lockBookingClass(tx, bookingId);
     const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update").limit(1);
     if (!booking) throw new Error("Booking not found.");
     if (["CANCELLED", "REFUNDED"].includes(booking.status)) throw new Error("This booking is already closed.");
     assertBookingTransition(booking.status, "CANCELLED");
     const now = new Date();
     const [updated] = await tx.update(bookings).set({ status: "CANCELLED", cancelledAt: now, seatReservationExpiresAt: null, updatedAt: now }).where(eq(bookings.id, bookingId)).returning();
-    if (["PENDING", "PROCESSING"].includes((await tx.select({ status: payments.status }).from(payments).where(eq(payments.bookingId, bookingId)).for("update").limit(1))[0]?.status ?? "")) await tx.update(payments).set({ status: "FAILED", updatedAt: now }).where(eq(payments.bookingId, bookingId));
+    // Booking cancellation is not evidence of payment failure. Open or processing
+    // Stripe payments remain visible until a terminal provider event arrives.
     await refreshCapacityStatus(tx, booking.classId, now);
     return updated ?? booking;
   });
