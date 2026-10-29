@@ -247,18 +247,20 @@ export async function duplicateClass(id: string) {
 }
 
 export async function publishClass(id: string) {
-  const [record] = await getDb().select().from(classes).where(eq(classes.id, id)).limit(1);
+  return getDb().transaction(async tx => {
+  const [record] = await tx.select().from(classes).where(eq(classes.id, id)).for("update").limit(1);
   if (!record) throw new Error("Class not found.");
   if (["CANCELLED", "COMPLETED", "ARCHIVED"].includes(record.status)) throw new Error("This class cannot be published from its current lifecycle state.");
   const country = getCountryConfig(record.country);
-  const [category] = await getDb().select({ country: categories.country, isActive: categories.isActive, visibility: categories.visibility }).from(categories).where(eq(categories.id, record.categoryId)).limit(1);
-  if (!category || category.country !== record.country || !category.isActive || category.visibility !== "VISIBLE") throw new Error("Choose an active, visible category from the class country before publishing.");
+  const [category] = await tx.select({ country: categories.country, isActive: categories.isActive, visibility: categories.visibility }).from(categories).where(eq(categories.id, record.categoryId)).for("share").limit(1);
+  if (!category || category.country !== record.country || !category.isActive || category.visibility !== "VISIBLE") throw new Error("Cannot publish: choose an active, visible category from the class country. Update the category in Admin → Categories, save, then publish again.");
   if (record.currency !== country.currency) throw new Error(`The ${country.name} class must use ${country.currency} before it can be published.`);
   if (!record.shortDescription || !record.fullDescription || !record.categoryId || !record.timezone) throw new Error("Complete the required class information before publishing.");
-  if (record.deliveryFormat !== "ONLINE" && (!record.venueName || !record.venueAddress)) throw new Error("Add the venue details before publishing an in-person or hybrid class.");
-  if (record.deliveryFormat !== "IN_PERSON" && !record.onlineAttendanceInfo) throw new Error("Add online attendance information before publishing this class.");
-  const [updated] = await getDb().update(classes).set({ status: "PUBLISHED", updatedAt: new Date() }).where(eq(classes.id, id)).returning();
+  if (record.deliveryFormat !== "ONLINE" && (!record.venueName?.trim() || !record.venueAddress?.trim())) throw new Error("Cannot publish: add both the venue name and venue address for this in-person or hybrid class. Save the class, then publish again.");
+  if (record.deliveryFormat !== "IN_PERSON" && !record.onlineAttendanceInfo?.trim()) throw new Error("Cannot publish: add online attendance information. Save the class, then publish again.");
+  const [updated] = await tx.update(classes).set({ status: "PUBLISHED", updatedAt: new Date() }).where(eq(classes.id, id)).returning();
   return updated;
+  });
 }
 
 export async function unpublishClass(id: string) {

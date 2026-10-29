@@ -6,7 +6,7 @@ import { getDb } from "@/lib/db";
 import { accountClaimTokens, bookings, categories, classes, countries, payments, refunds, user } from "@/db/schema";
 import { completeAccountLink, createAccountToken } from "@/server/auth/tokens";
 import { markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
-import { cancelClass, deleteSourceReference, replaceClassSources, saveSourceReference } from "@/server/catalogue/service";
+import { cancelClass, deleteSourceReference, publishClass, replaceClassSources, saveSourceReference } from "@/server/catalogue/service";
 import { syncPaymentRefundTotals, syncRefundFromStripe } from "@/server/payments/refunds";
 
 describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests", () => {
@@ -63,6 +63,32 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
       await replaceClassSources(record.id, []);
       await deleteSourceReference(source.id);
     }
+  });
+
+  it("keeps drafts unchanged until category and venue requirements are met", async () => {
+    const { record } = await fixture();
+    await db.update(classes).set({ status: "DRAFT", deliveryFormat: "IN_PERSON", venueName: null, venueAddress: null }).where(eq(classes.id, record.id));
+    await db.update(categories).set({ isActive: false, visibility: "HIDDEN" }).where(eq(categories.id, categoryId));
+    try {
+      await expect(publishClass(record.id)).rejects.toThrow("Admin → Categories");
+      await db.update(categories).set({ isActive: true, visibility: "VISIBLE" }).where(eq(categories.id, categoryId));
+      await expect(publishClass(record.id)).rejects.toThrow("venue name and venue address");
+      expect((await db.select().from(classes).where(eq(classes.id, record.id)))[0].status).toBe("DRAFT");
+      await db.update(classes).set({ venueName: "Test venue", venueAddress: "1 Test Street" }).where(eq(classes.id, record.id));
+      expect((await publishClass(record.id)).status).toBe("PUBLISHED");
+    } finally {
+      await db.update(categories).set({ isActive: true, visibility: "VISIBLE" }).where(eq(categories.id, categoryId));
+    }
+  });
+
+  it("requires online attendance details and refuses publishing cancelled classes", async () => {
+    const { record } = await fixture();
+    await db.update(classes).set({ status: "DRAFT", onlineAttendanceInfo: "   " }).where(eq(classes.id, record.id));
+    await expect(publishClass(record.id)).rejects.toThrow("online attendance information");
+    await db.update(classes).set({ onlineAttendanceInfo: "Joining instructions will be emailed." }).where(eq(classes.id, record.id));
+    expect((await publishClass(record.id)).status).toBe("PUBLISHED");
+    await cancelClass(record.id);
+    await expect(publishClass(record.id)).rejects.toThrow("lifecycle state");
   });
 
   it("ignores terminal events from an old Checkout attempt", async () => {

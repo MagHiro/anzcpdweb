@@ -1,8 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SignOutButton } from "@/components/auth-form";
+import { AdminFeedback } from "@/components/admin-feedback";
+import gsap from "gsap";
+import "@/components/admin-workspace.css";
 
 type NavItem = { href: string; label: string; icon: "grid" | "book" | "users" | "calendar" | "money" | "settings" | "file" | "shield" | "message" | "spark" };
 type NavGroup = { label: string; links: NavItem[] };
@@ -35,19 +38,30 @@ function NavGlyph({ name }: { name: NavItem["icon"] }) {
 
 export function Workspace({ children, name, admin = false }: { children: ReactNode; name: string; admin?: boolean }) {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const content = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const motion = gsap.matchMedia();
+    motion.add("(prefers-reduced-motion: no-preference)", () => {
+      gsap.fromTo(content.current, { opacity: .5, y: 6 }, { opacity: 1, y: 0, duration: .18, ease: "power2.out", clearProps: "all" });
+    });
+    return () => motion.revert();
+  }, [pathname]);
   const groups = admin ? adminGroups : accountGroups;
   const active = (href: string) => pathname === href || (href !== "/admin" && href !== "/account" && pathname.startsWith(href + "/"));
   const current = groups.flatMap(g => g.links).find(item => active(item.href) && (item.href !== "/admin" && item.href !== "/account")) ?? groups[0].links[0];
-  return <div className={"workspace " + (admin ? "workspace-admin" : "workspace-account")}>
+  return <AdminFeedback><div className={"workspace " + (admin ? "workspace-admin" : "workspace-account")}>
+    <a href="#workspace-main" className="workspace-skip">Skip to content</a>
     <aside className="workspace-sidebar">
       <Link href="/" className="workspace-brand"><span className="workspace-symbol">A<span>↗</span></span><span className="workspace-brand-label">ANZ Academy<small>{admin ? "Operations workspace" : "Your learning space"}</small></span></Link>
-      <nav aria-label={admin ? "Administration" : "Account"}>{groups.map(group => <div className="workspace-nav-group" key={group.label}><p>{group.label}</p>{group.links.map(item => <Link key={item.href} href={item.href} aria-current={active(item.href) ? "page" : undefined}><NavGlyph name={item.icon} /><span>{item.label}</span>{active(item.href) && <span className="workspace-active-dot" aria-hidden="true" />}</Link>)}</div>)}</nav>
+      <button type="button" className="workspace-menu-toggle focus-ring" aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen(value => !value)}>{menuOpen ? "Close menu ×" : "Menu ☰"}</button>
+      <nav id="workspace-navigation" data-open={menuOpen} aria-label={admin ? "Administration" : "Account"}>{groups.map(group => <div className="workspace-nav-group" key={group.label}><p>{group.label}</p>{group.links.map(item => <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} aria-current={active(item.href) ? "page" : undefined}><NavGlyph name={item.icon} /><span>{item.label}</span>{active(item.href) && <span className="workspace-active-dot" aria-hidden="true" />}</Link>)}</div>)}</nav>
       <div className="workspace-identity"><span className="identity-avatar">{name.slice(0, 1).toUpperCase()}</span><div><p>{name}</p><SignOutButton /></div></div>
     </aside>
     <div className="workspace-body">
       <header className="workspace-topbar"><div><span className="workspace-location">{admin ? "Administration" : "My learning"} / <strong>{current.label}</strong></span></div><Link href="/classes">Explore CPD activities <span aria-hidden="true">↗</span></Link></header>
-      <div className="workspace-content">{children}</div>
+      <main id="workspace-main" tabIndex={-1} ref={content} className="workspace-content">{children}</main>
       <footer className="workspace-footer"><span>ANZ Migration Academy</span><span>Need support? <Link href="/complaints">Complaints</Link> · <a href="mailto:info@anzmigrationacademy.com">Contact the academy</a></span></footer>
     </div>
-  </div>;
+  </div></AdminFeedback>;
 }

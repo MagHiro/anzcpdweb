@@ -160,7 +160,7 @@ input:focus, select:focus, textarea:focus { border-color: #9b60aa; }
 .workspace-identity button { font-size: .7rem; }
 .identity-avatar { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%; background: #e5eee7; color: var(--forest); }
 .workspace-body { min-width: 0; display: flex; flex-direction: column; }
-.workspace-topbar { display: flex; justify-content: space-between; gap: 16px; padding: 24px 40px; border-bottom: 1px solid var(--line); font-size: .75rem; color: var(--muted); }
+.workspace-topbar { display: flex; justify-content: space-between; gap: 16px; padding: 24px 40px; border-bottom: 1px solid var(--line); font-size: .75rem; color: var(--muted); background: white; }
 .workspace-topbar a { color: var(--forest); }
 .workspace-content { width: 100%; max-width: 1480px; margin: 0 auto; padding: 40px 40px 80px; flex: 1; }
 .workspace-content .grid > *, .workspace-content form { min-width: 0; }

@@ -3,6 +3,7 @@ import { Children, cloneElement, isValidElement, useId, type ComponentProps, typ
 import type { CountryCode } from "@/db/schema";
 import { cn, formatMoney } from "@/lib/utils";
 import { getCpdLabel } from "@/lib/domain/countries";
+import { FeedbackNotice } from "@/components/admin-feedback";
 
 export type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
 export type BadgeTone = "neutral" | "green" | "amber" | "red" | "blue";
@@ -109,8 +110,7 @@ export function TextArea({ className, ...props }: ComponentProps<"textarea">) { 
 export function Select({ className, ...props }: ComponentProps<"select">) { return <select className={cn(inputClassName, "appearance-auto", className)} {...props} />; }
 
 export function FormNotice({ children, tone = "error", className }: { children?: ReactNode; tone?: "error" | "success" | "info"; className?: string }) {
-  if (!children) return null;
-  return <div className={cn("rounded-[.6rem] border px-4 py-3 text-sm leading-6", tone === "error" && "border-[#e8beb8] bg-[var(--color-danger-soft)] text-[var(--color-danger)]", tone === "success" && "border-[#b9d7ca] bg-[var(--color-success-soft)] text-[var(--color-success)]", tone === "info" && "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)]", className)} role={tone === "error" ? "alert" : "status"}>{children}</div>;
+  return <FeedbackNotice tone={tone} className={className}>{children}</FeedbackNotice>;
 }
 
 export function Price({ amount, currency }: { amount: number; currency: string }) { return <span className="data-numeric font-bold tracking-[-.03em]">{formatMoney(amount, currency)}</span>; }

@@ -5,9 +5,11 @@ import { AdminModal } from "@/components/admin-modal";
 import { SourceReferenceForm } from "@/components/admin-forms";
 import { Button, CountryBadge, EmptyState, FormNotice } from "@/components/ui";
 import { deleteSourceReferenceAction } from "@/server/actions/admin";
+import { useAdminFeedback } from "@/components/admin-feedback";
 type Source = typeof sourceReferences.$inferSelect;
 
 export function SourceManager({ rows }: { rows: Source[] }) {
+  const notify = useAdminFeedback();
   const [editing, setEditing] = useState<Source | "new" | null>(null);
   const [deleting, setDeleting] = useState<Source | null>(null);
   const [pending, setPending] = useState(false);
@@ -20,7 +22,7 @@ export function SourceManager({ rows }: { rows: Source[] }) {
       const data = new FormData();
       data.set("id", deleting.id);
       const result = await deleteSourceReferenceAction(data);
-      if (result.ok) { setDeleting(null); setEditing(null); }
+      if (result.ok) { notify?.("Source reference deleted.", "success"); setDeleting(null); setEditing(null); }
       else setError(result.message ?? "Source reference could not be deleted.");
     } catch { setError("Source reference could not be deleted. Please try again."); }
     finally { setPending(false); }
