@@ -146,6 +146,7 @@ export async function saveClass(input: {
   cpdUnitAmount?: number | string;
   cpdActivityCategory?: string;
   professionalIdentifierRequired: boolean;
+  isUnlisted?: boolean;
   mediaAltText?: string;
   seoTitle?: string;
   seoDescription?: string;
@@ -182,6 +183,7 @@ export async function saveClass(input: {
     cpdUnitAmount: input.cpdUnitType === "NONE" ? null : String(input.cpdUnitAmount),
     cpdActivityCategory: input.cpdActivityCategory || null,
     professionalIdentifierRequired: input.professionalIdentifierRequired,
+    isUnlisted: input.isUnlisted ?? false,
     mediaAltText: input.mediaAltText || null,
     seoTitle: input.seoTitle || null,
     seoDescription: input.seoDescription || null,
@@ -231,6 +233,7 @@ export async function duplicateClass(id: string) {
     cpdUnitAmount: source.cpdUnitAmount,
     cpdActivityCategory: source.cpdActivityCategory,
     professionalIdentifierRequired: source.professionalIdentifierRequired,
+    isUnlisted: source.isUnlisted,
     mediaAltText: source.mediaAltText,
     seoTitle: source.seoTitle,
     seoDescription: source.seoDescription,

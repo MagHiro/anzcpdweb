@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   if (!slugSchema.safeParse(slug).success) notFound();
   const record = await getPublishedClassBySlug(slug).catch(() => null);
   if (!record) return { title: "Class not found" };
-  return { title: record.seoTitle ?? record.title, description: record.seoDescription ?? record.shortDescription, alternates: { canonical: `/classes/${record.slug}` }, openGraph: { title: record.title, description: record.shortDescription, type: "article" } };
+  return { robots: record.isUnlisted ? { index: false, follow: false } : undefined, title: record.seoTitle ?? record.title, description: record.seoDescription ?? record.shortDescription, alternates: { canonical: `/classes/${record.slug}` }, openGraph: { title: record.title, description: record.shortDescription, type: "article" } };
 }
 
 export default async function ClassDetailPage({ params }: { params: Params }) {

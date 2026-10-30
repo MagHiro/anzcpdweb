@@ -36,6 +36,13 @@
       "when": 1793327057902,
       "tag": "0004_green_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793346659245,
+      "tag": "0005_wide_human_torch",
+      "breakpoints": true
     }
   ]
 }

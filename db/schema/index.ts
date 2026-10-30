@@ -223,6 +223,7 @@ export const classes = pgTable(
     cpdUnitAmount: numeric("cpd_unit_amount", { precision: 10, scale: 2 }),
     cpdActivityCategory: text("cpd_activity_category"),
     professionalIdentifierRequired: boolean("professional_identifier_required").notNull().default(false),
+    isUnlisted: boolean("is_unlisted").notNull().default(false),
     status: classStatusEnum("status").notNull().default("DRAFT"),
     mediaAltText: text("media_alt_text"),
     seoTitle: text("seo_title"),

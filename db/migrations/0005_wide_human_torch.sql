@@ -1,0 +1,1 @@
+ALTER TABLE "classes" ADD COLUMN "is_unlisted" boolean DEFAULT false NOT NULL;

@@ -141,7 +141,7 @@ export async function saveClassAction(formData: FormData): Promise<AdminActionSt
       bookingClosesAt: parseLocalDateTime(raw.bookingClosesAt, timezone),
     });
     if (!parsed.success) return { ok: false, message: "Review the class fields.", fieldErrors: fieldErrors(parsed.error) };
-    const classRecord = await saveClass({ ...parsed.data, id: parsed.data.id || undefined, unlimitedCapacity: parsed.data.unlimitedCapacity === "true", professionalIdentifierRequired: parsed.data.professionalIdentifierRequired === "true" });
+    const classRecord = await saveClass({ ...parsed.data, id: parsed.data.id || undefined, unlimitedCapacity: parsed.data.unlimitedCapacity === "true", professionalIdentifierRequired: parsed.data.professionalIdentifierRequired === "true", isUnlisted: parsed.data.isUnlisted === "true" });
     await writeAuditLog({ actorUserId: session.user.id, action: parsed.data.id ? "CLASS_UPDATED" : "CLASS_CREATED", entityType: "class", entityId: classRecord.id, metadata: { country: classRecord.country, title: classRecord.title } });
     revalidatePath("/admin/classes");
     revalidatePath(`/admin/classes/${classRecord.id}`);

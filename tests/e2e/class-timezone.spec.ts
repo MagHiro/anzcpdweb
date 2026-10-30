@@ -22,6 +22,18 @@ test("online timezone selection synchronizes times; venue classes stay local", a
     await expect(card.locator("time").first()).toContainText("12:00 pm");
     await expect(card.getByText("Timezone: Pacific/Auckland", { exact: true })).toBeVisible();
     await page.goto(`/classes/${activity.slug}`);
+    await db.update(classes).set({ isUnlisted: true }).where(eq(classes.id, activity.id));
+    await page.goto(`/classes?q=${encodeURIComponent(activity.title)}`);
+    await expect(card).toHaveCount(0);
+    await page.goto(`/classes/${activity.slug}`);
+    await expect(page.getByRole("heading", { name: activity.title, exact: true })).toBeVisible();
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex, nofollow");
+    await page.goto(`/classes/${activity.slug}/book`);
+    await expect(page.getByRole("heading", { name: "Reserve your place." })).toBeVisible();
+    const sitemap = await page.request.get("/sitemap.xml");
+    expect(await sitemap.text()).not.toContain(activity.slug);
+    await db.update(classes).set({ isUnlisted: false }).where(eq(classes.id, activity.id));
+    await page.goto(`/classes/${activity.slug}`);
     const selector = page.getByLabel("Display timezone");
     await expect(selector).toHaveValue("Pacific/Auckland");
     await selector.selectOption("UTC");

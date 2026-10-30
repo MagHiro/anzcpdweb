@@ -142,6 +142,7 @@ export function AdminClassForm({ classRecord, categories, presenters: presenterO
       <Field label="Currency" required><Select name="currency" defaultValue={classRecord?.currency ?? "AUD"}><option value="AUD">AUD</option><option value="NZD">NZD</option></Select></Field>
       <Field label="Booking opens" required><TextInput name="bookingOpensAt" type="datetime-local" defaultValue={defaultDate(classRecord, "bookingOpensAt", timezone)} required /></Field>
       <Field label="Booking closes" required><TextInput name="bookingClosesAt" type="datetime-local" defaultValue={defaultDate(classRecord, "bookingClosesAt", timezone)} required /></Field>
+      <Field label="Listing visibility" hint="Unlisted classes stay bookable through their direct link when published."><Select name="isUnlisted" defaultValue={String(classRecord?.isUnlisted ?? false)}><option value="false">Public — show in listings</option><option value="true">Unlisted — direct link only</option></Select></Field>
     </div></section>
     <section id="editor-4" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><p className="eyebrow text-[var(--fern)]">Media and search</p><div className="mt-5 grid gap-5 sm:grid-cols-2">
       <Field label="Media alt text"><TextInput name="mediaAltText" defaultValue={classRecord?.mediaAltText ?? ""} /></Field>

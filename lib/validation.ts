@@ -126,6 +126,7 @@ export const classFormSchema = z.object({
   cpdUnitAmount: z.coerce.number().min(0).max(10_000).optional().or(z.literal("")),
   cpdActivityCategory: z.string().trim().max(120).optional().or(z.literal("")),
   professionalIdentifierRequired: z.enum(["true", "false"]),
+  isUnlisted: z.enum(["true", "false"]).default("false"),
   mediaAltText: z.string().trim().max(240).optional().or(z.literal("")),
   seoTitle: z.string().trim().max(180).optional().or(z.literal("")),
   seoDescription: z.string().trim().max(320).optional().or(z.literal("")),

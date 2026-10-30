@@ -41,7 +41,7 @@ export async function getPublishedClasses(filters: {
   const counts = activeSeatCounts();
   const pageSize = Math.min(filters.pageSize ?? 12, 50);
   const page = Math.min(Math.max(filters.page ?? 1, 1), 10_000);
-  const conditions = [inArray(classes.status, ["PUBLISHED", "SOLD_OUT"] as const), eq(categories.isActive, true), eq(categories.visibility, "VISIBLE")];
+  const conditions = [eq(classes.isUnlisted, false), inArray(classes.status, ["PUBLISHED", "SOLD_OUT"] as const), eq(categories.isActive, true), eq(categories.visibility, "VISIBLE")];
   if (filters.country) conditions.push(eq(classes.country, filters.country));
   if (filters.categorySlug) conditions.push(eq(categories.slug, filters.categorySlug));
   if (filters.deliveryFormat) conditions.push(eq(classes.deliveryFormat, filters.deliveryFormat));
@@ -136,6 +136,7 @@ export async function getPublishedActivityTypes(country?: CountryCode) {
     eq(categories.isActive, true),
     eq(categories.visibility, "VISIBLE"),
     isNotNull(classes.cpdActivityCategory),
+    eq(classes.isUnlisted, false),
   ];
   if (country) conditions.push(eq(classes.country, country));
   const rows = await getDb()
