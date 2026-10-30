@@ -21,7 +21,21 @@ function useAdminAction(action: (formData: FormData) => Promise<AdminActionState
   return useActionState(async (_state: AdminActionState, formData: FormData) => {
     try {
       const result = await action(formData);
-      if (result.ok) router.refresh();
+      if (result.ok) {
+        // React resets uncontrolled fields after actions. Preserve the submitted
+        // values as their new defaults before that reset, including unchecked boxes.
+        const recordId = String(formData.get("id") ?? formData.get("classId") ?? "");
+        for (const form of document.querySelectorAll("form")) {
+          const identity = form.querySelector<HTMLInputElement>('input[name="id"], input[name="classId"]');
+          if (!identity || identity.value !== recordId) continue;
+          for (const field of form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input[name], select[name], textarea[name]")) {
+            if (field instanceof HTMLInputElement && ["checkbox", "radio"].includes(field.type)) field.defaultChecked = field.checked;
+            else if (field instanceof HTMLSelectElement) for (const option of field.options) option.defaultSelected = option.selected;
+            else if (!(field instanceof HTMLInputElement && field.type === "file")) field.defaultValue = field.value;
+          }
+        }
+        router.refresh();
+      }
       return result;
     } catch {
       return { ok: false, message: "The request could not be confirmed. Refresh this page before retrying. For refunds, check the payment record first to avoid duplicate requests." };

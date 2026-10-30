@@ -121,7 +121,7 @@ export async function saveClassSourcesAction(formData: FormData): Promise<AdminA
     await replaceClassSources(classId, sourceIds);
     await writeAuditLog({ actorUserId: session.user.id, action: "CLASS_SOURCE_REFERENCES_UPDATED", entityType: "class", entityId: classId, metadata: { count: sourceIds.length } });
     revalidatePath(`/admin/classes/${classId}`);
-    revalidatePath("/classes");
+    revalidatePath("/classes", "layout");
     return { ok: true, message: "Source references updated." };
   } catch (error) {
     return { ok: false, message: safeErrorMessage(error, "Source references could not be updated.") };
@@ -145,7 +145,7 @@ export async function saveClassAction(formData: FormData): Promise<AdminActionSt
     await writeAuditLog({ actorUserId: session.user.id, action: parsed.data.id ? "CLASS_UPDATED" : "CLASS_CREATED", entityType: "class", entityId: classRecord.id, metadata: { country: classRecord.country, title: classRecord.title } });
     revalidatePath("/admin/classes");
     revalidatePath(`/admin/classes/${classRecord.id}`);
-    revalidatePath("/classes");
+    revalidatePath("/classes", "layout");
     return { ok: true, message: parsed.data.id ? "Class updated." : "Class saved as a draft.", id: classRecord.id };
   } catch (error) {
     return { ok: false, message: safeErrorMessage(error, "Class could not be saved. Check the slug and category.") };

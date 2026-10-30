@@ -68,3 +68,51 @@ test("mobile navigation supports every destination without page overflow", async
   await expect(page.getByRole("button", { name: "Menu", exact: false })).toHaveAttribute("aria-expanded", "false");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test("timezone edits and reference deselections survive repeated saves", async ({ page }) => {
+  await page.goto("/admin/classes");
+  await page.locator('main a[href^="/admin/classes/"]').filter({ hasNotText: "New" }).first().click();
+  const timezone = page.getByLabel("Timezone", { exact: false });
+  const originalZone = await timezone.inputValue();
+  const nextZone = originalZone === "Australia/Perth" ? "Pacific/Auckland" : "Australia/Perth";
+  const start = page.getByLabel("Start", { exact: false });
+  const originalStart = await start.inputValue();
+  const editor = timezone.locator("xpath=ancestor::form");
+  const save = editor.getByRole("button", { name: /Save changes|Save class/ });
+  try {
+    await timezone.selectOption(nextZone);
+    await save.click();
+    await expect(editor.getByText("Class updated.", { exact: true })).toBeVisible();
+    await expect(timezone).toHaveValue(nextZone);
+    await expect(start).toHaveValue(originalStart);
+    await save.click();
+    await page.reload();
+    await expect(timezone).toHaveValue(nextZone);
+    await expect(start).toHaveValue(originalStart);
+  } finally {
+    await timezone.selectOption(originalZone);
+    await start.fill(originalStart);
+    await save.click();
+    await expect(editor.getByText("Class updated.", { exact: true })).toBeVisible();
+  }
+  const checkbox = page.locator('input[name="sourceIds"]').first();
+  if (await checkbox.count()) {
+    const checked = await checkbox.isChecked();
+    const form = checkbox.locator("xpath=ancestor::form");
+    try {
+      await checkbox.check();
+      await form.getByRole("button", { name: "Save attached references" }).click();
+      await expect(form.getByText("Source references updated.", { exact: true })).toBeVisible();
+      await checkbox.uncheck();
+      await form.getByRole("button", { name: "Save attached references" }).click();
+      await expect(form.getByRole("button", { name: "Save attached references" })).toBeEnabled();
+      await expect(checkbox).not.toBeChecked();
+      await page.reload();
+      await expect(checkbox).not.toBeChecked();
+    } finally {
+      await checkbox.setChecked(checked);
+      await form.getByRole("button", { name: "Save attached references" }).click();
+      await expect(form.getByRole("button", { name: "Save attached references" })).toBeEnabled();
+    }
+  }
+});
