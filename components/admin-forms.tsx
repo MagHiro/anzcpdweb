@@ -173,7 +173,7 @@ function ActionForm({ action, id, label, variant = "primary", confirmMessage }: 
   useEffect(() => { if (state.ok) router.refresh(); }, [state, router]);
   return <ConfirmForm action={formAction} message={confirmMessage} className="max-w-lg space-y-3">
     <input type="hidden" name="id" value={id} />
-    <button type="submit" disabled={pending} aria-busy={pending} className={`focus-ring min-h-10 rounded-full px-4 text-xs font-bold disabled:opacity-60 ${variant === "primary" ? "bg-[var(--forest)] text-white" : variant === "danger" ? "border border-[#e8bbb6] text-[var(--error)]" : "border border-[var(--line)] text-[var(--forest)]"}`}>{pending ? `${label}…` : label}</button>
+    <Button type="submit" disabled={pending} aria-busy={pending} variant={variant} size="sm">{pending ? `${label}…` : label}</Button>
     <FormNotice tone={state.ok ? "success" : "error"}>{state.message}</FormNotice>
   </ConfirmForm>;
 }

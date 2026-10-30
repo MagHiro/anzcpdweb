@@ -1,11 +1,18 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { Field, TextInput, formatStatusLabel } from "@/components/ui";
+import { Button, Field, TextInput, formatStatusLabel } from "@/components/ui";
 import { MoneyInput } from "@/components/money-input";
 import { BookingStatus } from "@/components/booking-status";
 
 describe("redesigned shared controls", () => {
+  it("gives every action variant an explicit background and readable text", () => {
+    for (const variant of ["primary", "secondary", "quiet", "danger"] as const) {
+      const html = renderToStaticMarkup(createElement(Button, { variant }, "Action"));
+      expect(html).toContain("bg-");
+      expect(html).toContain(variant === "primary" || variant === "danger" ? "text-white" : "text-[var(--color-brand)]");
+    }
+  });
   it("keeps base input styles when a caller adds a class", () => {
     const html = renderToStaticMarkup(createElement(TextInput, { className: "extra-style" }));
     expect(html).toContain("focus-ring");
