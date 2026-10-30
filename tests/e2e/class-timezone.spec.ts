@@ -18,7 +18,9 @@ test("online timezone selection synchronizes times; venue classes stay local", a
     await expect(card.getByRole("heading", { name: activity.title })).toBeVisible();
     await expect(card.getByText("Timezone: America/New_York", { exact: true })).toBeVisible();
     await expect(card.getByText("No seat limit", { exact: true })).toHaveCount(0);
-    await page.getByLabel("Display timezone").selectOption("Pacific/Auckland");
+    await page.getByRole("button", { name: /^Display timezone/ }).click();
+    await page.getByRole("combobox", { name: "Search display timezone" }).fill("Auckland");
+    await page.getByRole("option", { name: "Pacific/Auckland" }).click();
     await expect(card.locator("time").first()).toContainText("12:00 pm");
     await expect(card.getByText("Timezone: Pacific/Auckland", { exact: true })).toBeVisible();
     await page.goto(`/classes/${activity.slug}`);
@@ -34,16 +36,18 @@ test("online timezone selection synchronizes times; venue classes stay local", a
     expect(await sitemap.text()).not.toContain(activity.slug);
     await db.update(classes).set({ isUnlisted: false }).where(eq(classes.id, activity.id));
     await page.goto(`/classes/${activity.slug}`);
-    const selector = page.getByLabel("Display timezone");
-    await expect(selector).toHaveValue("Pacific/Auckland");
-    await selector.selectOption("UTC");
+    const selector = page.getByRole("button", { name: /^Display timezone/ });
+    await expect(selector).toContainText("Pacific/Auckland");
+    await selector.click();
+    await page.getByRole("combobox", { name: "Search display timezone" }).fill("UTC");
+    await page.getByRole("option", { name: "UTC", exact: true }).click();
     await expect(page.locator("time").first()).toContainText("12:00 am");
     await expect(page.getByText("Timezone: UTC", { exact: true }).first()).toBeVisible();
     await page.reload();
-    await expect(selector).toHaveValue("UTC");
+    await expect(selector).toContainText("UTC");
     await expect(page.locator("time").first()).toContainText("12:00 am");
     await page.goto(`/classes/${activity.slug}/book`);
-    await expect(page.getByLabel("Display timezone")).toHaveValue("UTC");
+    await expect(page.getByRole("button", { name: /^Display timezone/ })).toContainText("UTC");
     await expect(page.locator("time").first()).toContainText("12:00 am");
     await page.goto(`/classes/${activity.slug}`);
     await db.update(classes).set({ deliveryFormat: "IN_PERSON", venueName: "Sydney", venueAddress: "Sydney" }).where(eq(classes.id, activity.id));
@@ -64,8 +68,7 @@ test("online timezone selection synchronizes times; venue classes stay local", a
 test("invalid saved timezones fall back to the browser timezone", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("anzcpd-display-timezone", "invalid/timezone"));
   await page.goto("/classes");
-  const selector = page.getByLabel("Display timezone");
+  const selector = page.getByRole("button", { name: /^Display timezone/ });
   test.skip(await selector.count() === 0, "No online classes available");
-  await expect(selector).toHaveValue("");
-  await expect(selector.locator("option:checked")).toContainText("America/New York");
+  await expect(selector).toContainText("Automatic (America/New York)");
 });
