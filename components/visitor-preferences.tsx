@@ -72,7 +72,7 @@ export function VisitorPreferences() {
   const close = () => { setOpen(false); button.current?.focus(); };
 
   return <div className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:right-6">
-    {open && <div ref={panel} id={panelId} role="region" aria-label="Country and timezone" onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); close(); } }} className="w-80 max-w-full rounded-xl border border-[var(--line)] bg-white p-5 text-[var(--forest)] shadow-lg">
+    {open && <div ref={panel} id={panelId} role="region" aria-label="Country and timezone" onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); close(); } }} className="w-80 max-w-full max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain rounded-xl border border-[var(--line)] bg-white p-5 text-[var(--forest)] shadow-lg">
       <div className="flex items-center justify-between gap-4"><h2 className="text-base font-semibold">Country & timezone</h2><button type="button" onClick={close} aria-label="Close country and timezone" className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl">×</button></div>
       <p className="mt-2 text-sm text-[var(--muted)]">Online class times use your timezone. Change it anytime.</p>
       <label htmlFor={countryId} className="mt-4 mb-2 block text-sm">Country</label>

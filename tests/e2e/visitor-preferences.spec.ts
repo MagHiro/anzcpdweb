@@ -37,4 +37,17 @@ test("preferences open once a session, remain accessible, and remember choices",
   await bubble.click();
   await expect(panel).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const timezoneButton = panel.getByRole("button", { name: /^Your timezone/ });
+  await timezoneButton.click();
+  const search = panel.getByRole("combobox", { name: "Search your timezone" });
+  await expect(search).toBeVisible();
+  const fieldBox = await timezoneButton.boundingBox();
+  const searchBox = await search.boundingBox();
+  expect(searchBox!.y).toBeGreaterThanOrEqual(fieldBox!.y + fieldBox!.height);
+  expect(searchBox!.y - fieldBox!.y - fieldBox!.height).toBeLessThan(20);
+  await search.fill("Singapore");
+  await search.press("Enter");
+  await expect(timezoneButton).toContainText("Asia/Singapore");
+  const colors = await timezoneButton.evaluate(element => ({ text: getComputedStyle(element).color, background: getComputedStyle(element).backgroundColor }));
+  expect(colors.text).not.toBe(colors.background);
 });
