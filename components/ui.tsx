@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Children, cloneElement, isValidElement, useId, type ComponentProps, type ReactElement, type ReactNode } from "react";
 import type { CountryCode } from "@/db/schema";
 import { cn, formatMoney } from "@/lib/utils";
-import { getCpdLabel } from "@/lib/domain/countries";
+import { getCountryConfig, getCpdLabel } from "@/lib/domain/countries";
 import { FeedbackNotice } from "@/components/admin-feedback";
 import { VisitorTime } from "@/components/visitor-time";
 
@@ -121,8 +121,25 @@ export type ActivityCardItem = { slug: string; title: string; shortDescription: 
 export function ActivityCard({ item }: { item: ActivityCardItem }) {
   const cpd = getCpdLabel(item.cpdUnitType, item.cpdUnitAmount);
   const date = <VisitorTime startAt={new Date(item.startAt).toISOString()} timezone={item.timezone} allowConversion={item.deliveryFormat === "ONLINE"} />;
-  const time = item.deliveryFormat === "ONLINE" ? "Original timezone" : "Venue timezone";
-  return <article className="card-lift activity-card group flex h-full flex-col overflow-hidden rounded-[1.3rem] bg-white"><div className="flex items-center justify-between gap-3 bg-[var(--mist)] px-6 py-5"><CountryBadge country={item.country} /><span className="text-xs font-medium text-[var(--muted)]">{formatStatusLabel(item.deliveryFormat)}</span></div><div className="flex flex-1 flex-col p-7"><p className="text-xs font-semibold text-[var(--fern)]">{item.categoryName}</p><h3 className="mt-3 text-xl font-semibold leading-snug"><Link href={`/classes/${item.slug}`} className="focus-ring group-hover:underline underline-offset-4">{item.title}</Link></h3><p className="mt-3 line-clamp-3 text-sm leading-7 text-[var(--muted)]">{item.shortDescription}</p>{item.presenterName && <p className="mt-4 text-xs text-[var(--muted)]">With <span className="font-semibold text-[var(--ink)]">{item.presenterName}</span></p>}<dl className="mt-6 grid grid-cols-2 gap-4 border-t border-[var(--line)] pt-5 text-xs"><div><dt className="text-[var(--muted)]">Date & time</dt><dd className="mt-2 font-semibold">{date}<span className="mt-1 block font-normal">{time} · {item.timezone}</span></dd></div><div><dt className="text-[var(--muted)]">CPD value</dt><dd className="mt-2 font-semibold">{cpd ?? "Not specified"}<span className="mt-1 block font-normal">{item.cpdActivityCategory ?? "Professional development"}</span></dd></div></dl><div className="mt-auto pt-6"><div className="flex items-center justify-between gap-4 border-t border-[var(--line)] pt-5"><div><p className="text-lg"><Price amount={item.priceMinorUnits} currency={item.currency} /></p><p className="mt-1 text-[11px] text-[var(--muted)]">{item.remainingSeats === null ? "No seat limit" : item.remainingSeats === 0 ? "Sold out" : `${item.remainingSeats} places available`}</p></div><LinkButton href={`/classes/${item.slug}`} variant="secondary" size="sm">View details ↗</LinkButton></div></div></div></article>;
+  return <article className="card-lift activity-card group flex h-full min-w-0 flex-col bg-white">
+    <div className="flex items-center justify-between gap-4 px-6 pt-6">
+      <span className="text-xs font-medium text-[var(--fern)]">{getCountryConfig(item.country).name}</span>
+      <span className="text-xs text-[var(--muted)]">{formatStatusLabel(item.deliveryFormat)}</span>
+    </div>
+    <div className="flex flex-1 flex-col px-6 pb-6 pt-5">
+      <h3 className="activity-card-title"><Link href={`/classes/${item.slug}`} className="focus-ring rounded-sm underline-offset-4 group-hover:underline">{item.title}</Link></h3>
+      <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--muted)]">{item.shortDescription}</p>
+      {item.presenterName && <p className="mt-4 text-xs text-[var(--muted)]">With <span className="font-medium text-[var(--ink)]">{item.presenterName}</span></p>}
+      <dl className="mt-6 grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-5 border-t border-[var(--line)] pt-5 text-sm">
+        <div><dt className="text-xs text-[var(--muted)]">Date & time</dt><dd className="mt-2 font-medium leading-6">{date}</dd></div>
+        <div><dt className="text-xs text-[var(--muted)]">CPD</dt><dd className="mt-2 font-medium leading-6">{cpd ?? "Not specified"}{item.cpdActivityCategory && <span className="mt-1 block text-xs font-normal text-[var(--muted)]">{item.cpdActivityCategory}</span>}</dd></div>
+      </dl>
+      <div className="mt-auto pt-6"><div className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--line)] pt-5">
+        <div><p className="text-xl text-[var(--forest)]"><Price amount={item.priceMinorUnits} currency={item.currency} /></p>{item.remainingSeats !== null && <p className="mt-1 text-xs text-[var(--muted)]">{item.remainingSeats === 0 ? "Sold out" : `${item.remainingSeats} places available`}</p>}</div>
+        <LinkButton href={`/classes/${item.slug}`} variant="secondary" size="sm">View details ↗</LinkButton>
+      </div></div>
+    </div>
+  </article>;
 }
 
 export function ClassCard({ item }: { item: ActivityCardItem }) {

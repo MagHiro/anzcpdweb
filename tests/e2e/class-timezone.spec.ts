@@ -13,6 +13,11 @@ test("online timezone selection synchronizes times; venue classes stay local", a
   const [category] = await db.insert(categories).values({ country: "AU", name: "Timezone test", slug: randomUUID() }).returning();
   const [activity] = await db.insert(classes).values({ country: "AU", categoryId: category.id, title: "Timezone test activity", slug: randomUUID(), shortDescription: "Test", fullDescription: "Test", startAt: new Date("2027-06-01T00:00:00Z"), endAt: new Date("2027-06-01T02:00:00Z"), timezone: "Australia/Sydney", bookingOpensAt: new Date("2026-01-01"), bookingClosesAt: new Date("2027-05-30"), deliveryFormat: "ONLINE", priceMinorUnits: 10000, currency: "AUD", unlimitedCapacity: true, status: "PUBLISHED" }).returning();
   try {
+    await page.goto(`/classes?q=${encodeURIComponent(activity.title)}`);
+    const card = page.locator("article.activity-card").filter({ hasText: activity.title });
+    await expect(card.getByRole("heading", { name: activity.title })).toBeVisible();
+    await expect(card.getByText("Timezone: America/New_York", { exact: true })).toBeVisible();
+    await expect(card.getByText("No seat limit", { exact: true })).toHaveCount(0);
     await page.goto(`/classes/${activity.slug}`);
     const selector = page.getByLabel("Display timezone");
     await expect(selector).toHaveValue("America/New_York");
@@ -24,6 +29,10 @@ test("online timezone selection synchronizes times; venue classes stay local", a
     await expect(selector).toHaveCount(0);
     await expect(page.locator("time").first()).toContainText("10:00 am");
     await expect(page.getByText("Venue timezone: Australia/Sydney", { exact: true }).first()).toBeVisible();
+    await page.goto(`/classes?q=${encodeURIComponent(activity.title)}`);
+    await expect(card.getByText("Venue timezone: Australia/Sydney", { exact: true })).toHaveCount(1);
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   } finally {
     await db.delete(classes).where(eq(classes.id, activity.id));
     await db.delete(categories).where(eq(categories.id, category.id));
