@@ -320,8 +320,10 @@ export async function replaceClassSources(classId: string, sourceIds: string[]) 
     const [classRecord] = await tx.select({ country: classes.country }).from(classes).where(eq(classes.id, classId)).limit(1);
     if (!classRecord) throw new Error("Class not found.");
     if (uniqueSourceIds.length) {
+      const attached = await tx.select({ id: classSourceReferences.sourceReferenceId }).from(classSourceReferences).where(eq(classSourceReferences.classId, classId));
+      const attachedIds = new Set(attached.map(source => source.id));
       const sources = await tx.select({ id: sourceReferences.id, jurisdiction: sourceReferences.jurisdiction }).from(sourceReferences).where(inArray(sourceReferences.id, uniqueSourceIds));
-      if (sources.length !== uniqueSourceIds.length || sources.some((source) => source.jurisdiction !== classRecord.country)) throw new Error("Source references must match the class country.");
+      if (sources.length !== uniqueSourceIds.length || sources.some((source) => source.jurisdiction !== classRecord.country && !attachedIds.has(source.id))) throw new Error("New source references must match the class country.");
     }
     await tx.delete(classSourceReferences).where(eq(classSourceReferences.classId, classId));
     if (uniqueSourceIds.length) await tx.insert(classSourceReferences).values(uniqueSourceIds.map((sourceReferenceId) => ({ classId, sourceReferenceId })));

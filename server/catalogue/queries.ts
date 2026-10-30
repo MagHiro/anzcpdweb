@@ -173,6 +173,12 @@ export async function getAdminSourceReferences(jurisdiction?: CountryCode) {
   return getDb().select().from(sourceReferences).where(condition).orderBy(desc(sourceReferences.checkedAt), asc(sourceReferences.authority), asc(sourceReferences.title));
 }
 
+export async function getClassSourceOptions(classId: string, country: CountryCode) {
+  const [available, attached] = await Promise.all([getAdminSourceReferences(country), getClassSourceReferences(classId)]);
+  const sources = [...new Map([...attached.map(({ source }) => source), ...available].map(source => [source.id, source])).values()];
+  return { sources, selectedIds: attached.map(({ source }) => source.id) };
+}
+
 export async function getCategories(country?: CountryCode, includeArchived = false) {
   const conditions = includeArchived ? [] : [eq(categories.isActive, true), eq(categories.visibility, "VISIBLE")];
   if (country) conditions.push(eq(categories.country, country));
