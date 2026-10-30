@@ -12,7 +12,7 @@ const subscribe = (listener: () => void) => {
     window.removeEventListener(changeEvent, listener);
   };
 };
-const browserTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+export const browserTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const displayTimezone = () => {
   let zone = selectedTimezone;
   try { zone = window.localStorage.getItem(storageKey) || zone; } catch { /* Storage may be disabled. */ }
@@ -28,17 +28,27 @@ const setTimezone = (zone: string) => {
 };
 const TimezoneContext = createContext<{ online: boolean } | null>(null);
 
+export function useVisitorTimezone() {
+  return useSyncExternalStore(subscribe, displayTimezone, () => "Australia/Sydney");
+}
+
+const savedTimezone = () => {
+  try { return window.localStorage.getItem(storageKey) || selectedTimezone; } catch { return selectedTimezone; }
+};
+
 export function ClassTimezoneProvider({ online, children }: { online: boolean; children: ReactNode }) {
   return <TimezoneContext.Provider value={{ online }}>{children}</TimezoneContext.Provider>;
 }
 
-export function TimezoneSelector({ timezone }: { timezone: string }) {
+export function TimezoneSelector({ timezone, label = "Display timezone", ignoreClassContext = false }: { timezone: string; label?: string; ignoreClassContext?: boolean }) {
   const context = useContext(TimezoneContext);
   const selected = useSyncExternalStore(subscribe, displayTimezone, () => timezone);
+  const saved = useSyncExternalStore(subscribe, savedTimezone, () => "");
+  const detected = useSyncExternalStore(subscribe, browserTimezone, () => timezone);
   const id = useId();
-  if (context && !context.online) return null;
+  if (!ignoreClassContext && context && !context.online) return null;
   const zones = [...new Set([timezone, selected, "UTC", ...(typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : ["Australia/Sydney", "Australia/Melbourne", "Australia/Perth", "Australia/Adelaide", "Australia/Brisbane", "Pacific/Auckland"])])].sort();
-  return <span className="mt-3 block max-w-sm text-sm"><label htmlFor={id} className="mb-2 block">Display timezone</label><select className="focus-ring w-full min-w-0" id={id} value={selected} onChange={event => setTimezone(event.target.value)}>{zones.map(zone => <option key={zone} value={zone}>{zone.replaceAll("_", " ")}</option>)}</select></span>;
+  return <span className="mt-3 block max-w-sm text-sm"><label htmlFor={id} className="mb-2 block">{label}</label><select className="focus-ring w-full min-w-0" id={id} value={saved && saved === selected ? selected : ""} onChange={event => setTimezone(event.target.value)}><option value="">Automatic ({detected.replaceAll("_", " ")})</option>{zones.map(zone => <option key={zone} value={zone}>{zone.replaceAll("_", " ")}</option>)}</select></span>;
 }
 
 export function VisitorTime({ startAt, endAt, timezone, allowConversion = false, showSelector = false }: { startAt: string; endAt?: string; timezone: string; allowConversion?: boolean; showSelector?: boolean }) {

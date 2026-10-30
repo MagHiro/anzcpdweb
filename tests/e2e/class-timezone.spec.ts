@@ -54,5 +54,6 @@ test("invalid saved timezones fall back to the browser timezone", async ({ page 
   await page.goto("/classes");
   const selector = page.getByLabel("Display timezone");
   test.skip(await selector.count() === 0, "No online classes available");
-  await expect(selector).toHaveValue("America/New_York");
+  await expect(selector).toHaveValue("");
+  await expect(selector.locator("option:checked")).toContainText("America/New York");
 });

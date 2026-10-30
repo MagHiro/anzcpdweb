@@ -2,6 +2,7 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
+import { VisitorPreferences } from "@/components/visitor-preferences";
 
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -11,5 +12,6 @@ export function AppChrome({ children }: { children: ReactNode }) {
     {!workspace && <SiteHeader />}
     <main id="main-content" tabIndex={-1}>{children}</main>
     {!workspace && <SiteFooter />}
+    {!workspace && <VisitorPreferences />}
   </div>;
 }
