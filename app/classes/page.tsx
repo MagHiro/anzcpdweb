@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TimezoneSelector } from "@/components/visitor-time";
 import { ArrowRight, ArrowUpRight } from "@/components/icon";
 import { Button, ClassCard, Container, EmptyState, Field, LinkButton, Pagination, Select, TextInput } from "@/components/ui";
 import { getCategories, getPublishedActivityTypes, getPublishedClasses } from "@/server/catalogue/queries";
@@ -38,6 +39,7 @@ export default async function ClassesPage({ searchParams }: { searchParams: Prom
           <Field label="Delivery"><Select name="delivery" defaultValue={delivery ?? ""}><option value="">Any delivery format</option><option value="ONLINE">Online</option><option value="IN_PERSON">In person</option><option value="HYBRID">Hybrid</option></Select></Field>
           <Button type="submit" className="!w-full !rounded-full">Apply filters <ArrowRight size={16} className="ml-2" /></Button>
         </form>
+        {classes.some(item => item.deliveryFormat === "ONLINE") && <TimezoneSelector timezone="Australia/Sydney" />}
       </aside>
       <div className="min-w-0"><div className="flex flex-wrap items-center justify-between gap-5"><nav aria-label="Activity dates" className="flex flex-wrap gap-2">{(["upcoming","past"] as const).map(value=><Link key={value} href={href({time:value,page:undefined})} aria-current={time === value ? "page" : undefined} className={"rounded-full border px-5 py-3 text-sm transition " + (time === value ? "border-[var(--forest)] bg-[var(--forest)] text-white" : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--forest)]")}>{value === "past" ? "Past activities" : "Upcoming"}</Link>)}</nav><p className="text-sm text-[var(--muted)]">{unavailable ? "Results temporarily unavailable" : classes.length + " activities on this page"}</p></div>
       <div className="mt-6 flex flex-wrap gap-2">{filters.map(([key,label]) => label ? <Link key={key} href={href({ [key]: undefined, page: undefined })} aria-label={"Remove filter: "+label} className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border-strong)] bg-white px-4 py-2 text-xs text-[var(--forest)]">{label} <span aria-hidden="true" className="text-base leading-none">×</span></Link> : null)}</div>

@@ -18,6 +18,7 @@ export default async function BookClassPage({ params }: { params: Promise<{ slug
     country: record.country,
     title: record.title,
     startAt: record.startAt,
+    deliveryFormat: record.deliveryFormat,
     timezone: record.timezone,
     cpdUnitType: record.cpdUnitType,
     cpdUnitAmount: record.cpdUnitAmount,
