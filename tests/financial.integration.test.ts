@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 import { getDb } from "@/lib/db";
-import { accountClaimTokens, bookings, categories, classes, countries, payments, refunds, user } from "@/db/schema";
+import { accountClaimTokens, bookings, categories, classes, countries, emailOutbox, paymentReceipts, payments, refunds, user } from "@/db/schema";
+import { issuePaymentReceipt } from "@/server/payments/receipts";
 import { completeAccountLink, createAccountToken } from "@/server/auth/tokens";
 import { markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
 import { cancelClass, deleteSourceReference, publishClass, replaceClassSources, saveSourceReference } from "@/server/catalogue/service";
@@ -36,6 +37,25 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     return { record, booking, payment, session };
   }
 
+  it("issues one immutable receipt and one email only after successful payment", async () => {
+    const { booking, session } = await fixture("PENDING_PAYMENT");
+    expect(await issuePaymentReceipt(booking.id)).toBeNull();
+    await markCheckoutCompleted({ session, paymentSucceeded: false });
+    expect(await issuePaymentReceipt(booking.id)).toBeNull();
+    await markCheckoutCompleted({ session, paymentSucceeded: true });
+    const original = await issuePaymentReceipt(booking.id);
+    expect(original?.amountPaid).toBe(10000);
+    await db.update(bookings).set({ fullName: "Changed contact", classTitleSnapshot: "Changed title" }).where(eq(bookings.id, booking.id));
+    await markCheckoutCompleted({ session, paymentSucceeded: true });
+    const repeated = await issuePaymentReceipt(booking.id);
+    expect(repeated?.id).toBe(original?.id);
+    expect(repeated?.recipientName).toBe("Test");
+    expect(repeated?.classTitle).toBe("Financial regression");
+    const messages = await db.select().from(emailOutbox).where(eq(emailOutbox.dedupeKey, `payment-receipt:${original?.id}`));
+    expect(messages).toHaveLength(1);
+    expect(messages[0].messageType).toBe("PAYMENT_RECEIPT");
+  });
+
   it("records late capture without overbooking a reused seat", async () => {
     const { record, booking, payment, session } = await fixture();
     const [other] = await db.insert(bookings).values({ classId: record.id, fullName: "Other", email: "other@example.com", country: "AU", status: "CONFIRMED", amountSnapshot: 10000, currencySnapshot: "AUD", classTitleSnapshot: record.title, timezoneSnapshot: record.timezone, termsAcceptedAt: new Date(), refundPolicyAcceptedAt: new Date(), idempotencyKey: randomUUID() }).returning();
@@ -44,6 +64,7 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     expect(result.confirmed).toBe(false);
     expect((await db.select().from(bookings).where(eq(bookings.id, booking.id)))[0].status).toBe("CANCELLED");
     expect((await db.select().from(payments).where(eq(payments.id, payment.id)))[0].amountCaptured).toBe(10000);
+    expect((await issuePaymentReceipt(booking.id))?.amountPaid).toBe(10000);
   });
 
   it("atomically cancels partially refunded bookings when their class is cancelled", async () => {
@@ -163,6 +184,7 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
 
   afterAll(async () => {
     if (bookingIds.length) {
+      await db.delete(paymentReceipts).where(inArray(paymentReceipts.bookingId, bookingIds));
       await db.delete(refunds).where(inArray(refunds.bookingId, bookingIds));
       await db.delete(payments).where(inArray(payments.bookingId, bookingIds));
       await db.delete(bookings).where(inArray(bookings.id, bookingIds));

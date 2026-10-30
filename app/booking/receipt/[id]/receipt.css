@@ -1,0 +1,13 @@
+.academy-site:has(.receipt-workspace) > header,
+.academy-site:has(.receipt-workspace) > footer {
+  display: none;
+}
+
+@media print {
+  @page { size: A4; margin: 16mm; }
+  body, .receipt-workspace { background: white !important; }
+  .receipt-workspace { padding: 0 !important; min-height: auto !important; }
+  .receipt-toolbar, .skip-link { display: none !important; }
+  .receipt-sheet { max-width: none !important; padding: 24px 0 !important; box-shadow: none !important; }
+  .receipt-sheet table, .receipt-sheet footer { break-inside: avoid; }
+}

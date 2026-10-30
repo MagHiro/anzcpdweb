@@ -9,6 +9,15 @@ let smtpTransporter: Transporter | undefined;
 
 export type EmailMessage =
   | {
+      type: "PAYMENT_RECEIPT";
+      email: string;
+      name: string;
+      receiptNumber: string;
+      classTitle: string;
+      amount: string;
+      url: string;
+    }
+  | {
       type: "EMAIL_VERIFICATION" | "PASSWORD_RESET";
       email: string;
       name: string;
@@ -99,6 +108,7 @@ export async function queueEmail(message: EmailMessage, dedupeKey?: string): Pro
 }
 
 function emailDedupeKey(message: EmailMessage): string {
+  if (message.type === "PAYMENT_RECEIPT") return `payment-receipt:${message.receiptNumber}`;
   if (message.type === "BOOKING_CONFIRMATION") return `booking-confirmation:${message.bookingReference}`;
   if (message.type === "BOOKING_CANCELLED") return `booking-cancelled:${message.bookingReference}`;
   if (message.type === "ACCOUNT_SETUP") return `account-setup:${message.email.toLowerCase()}:${message.url}`;
@@ -110,6 +120,12 @@ function emailDedupeKey(message: EmailMessage): string {
 function renderMessage(message: EmailMessage): { subject: string; html: string; text: string } {
   const greeting = `Hello ${escapeHtml(message.name)},`;
   switch (message.type) {
+    case "PAYMENT_RECEIPT":
+      return {
+        subject: `Your payment receipt · ${message.amount}`,
+        html: `<div style="background:#f4f5f0;padding:32px 16px;font-family:Arial,sans-serif;color:#183e32"><div style="max-width:560px;margin:auto;background:white;padding:40px;border-top:4px solid #245c45"><p style="font-size:18px;font-weight:bold;margin:0 0 40px">ANZ Migration Academy</p><h1 style="font-size:32px;font-weight:500;margin:0">Payment received</h1><p style="font-size:36px;margin:16px 0 32px">${escapeHtml(message.amount)}</p><p>${greeting}</p><p style="line-height:1.6">${escapeHtml(message.classTitle)}</p><p style="font-size:12px;color:#59645c;overflow-wrap:anywhere">Receipt ${escapeHtml(message.receiptNumber)}</p><p style="margin-top:32px"><a style="background:#183e32;color:white;padding:14px 20px;display:inline-block;text-decoration:none" href="${escapeHtml(message.url)}">View / print receipt</a></p><p style="font-size:12px;color:#59645c;line-height:1.6">Your private receipt link is valid for 30 days. This receipt records payment, not attendance confirmation.</p></div></div>`,
+        text: `Hello ${message.name},\n\nPayment received: ${message.amount}\n${message.classTitle}\nReceipt: ${message.receiptNumber}\n\nView / print receipt: ${message.url}\n\nThis private link is valid for 30 days. This receipt records payment, not attendance confirmation.`,
+      };
     case "EMAIL_VERIFICATION":
       return {
         subject: "Verify your ANZ CPD email address",

@@ -9,6 +9,7 @@ import { createAccountToken } from "@/server/auth/tokens";
 import { queueEmail } from "@/server/email/service";
 import { getStripe } from "@/server/payments/stripe";
 import { assertBookingTransition } from "@/server/bookings/transitions";
+import { enqueuePaymentReceipt } from "@/server/payments/receipts";
 
 const reservationStatuses = ["PENDING_PAYMENT", "PAYMENT_PROCESSING"] as const;
 const seatHoldingStatuses = ["CONFIRMED", "PARTIALLY_REFUNDED"] as const;
@@ -260,6 +261,7 @@ export async function markCheckoutCompleted(input: { session: import("stripe").d
     return { booking: updatedBooking ?? booking, confirmed: true };
   });
 
+  if (input.paymentSucceeded && result.booking) await enqueuePaymentReceipt(result.booking.id);
   if (result.confirmed && result.booking) await enqueueBookingFulfilmentEmails(result.booking);
   return result;
 }

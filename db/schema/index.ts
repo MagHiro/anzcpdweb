@@ -335,6 +335,19 @@ export const payments = pgTable(
   ],
 );
 
+export const paymentReceipts = pgTable("payment_receipts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  paymentId: uuid("payment_id").notNull().references(() => payments.id, { onDelete: "restrict" }),
+  bookingId: uuid("booking_id").notNull().references(() => bookings.id, { onDelete: "restrict" }),
+  recipientName: text("recipient_name").notNull(),
+  recipientEmail: text("recipient_email").notNull(),
+  classTitle: text("class_title").notNull(),
+  amountPaid: integer("amount_paid").notNull(),
+  currency: text("currency").notNull(),
+  paidAt: timestamp("paid_at", { withTimezone: true }).notNull(),
+  issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("payment_receipts_payment_unique").on(table.paymentId)]);
+
 export const refunds = pgTable(
   "refunds",
   {
