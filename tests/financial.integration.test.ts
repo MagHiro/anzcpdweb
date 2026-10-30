@@ -5,6 +5,7 @@ import type Stripe from "stripe";
 import { getDb } from "@/lib/db";
 import { accountClaimTokens, bookings, categories, classes, countries, emailOutbox, paymentReceipts, payments, refunds, user } from "@/db/schema";
 import { issuePaymentReceipt } from "@/server/payments/receipts";
+import { receiptEmailAttachments, type EmailMessage } from "@/server/email/service";
 import { completeAccountLink, createAccountToken } from "@/server/auth/tokens";
 import { markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
 import { cancelClass, deleteSourceReference, publishClass, replaceClassSources, saveSourceReference } from "@/server/catalogue/service";
@@ -54,6 +55,15 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     const messages = await db.select().from(emailOutbox).where(eq(emailOutbox.dedupeKey, `payment-receipt:${original?.id}`));
     expect(messages).toHaveLength(1);
     expect(messages[0].messageType).toBe("PAYMENT_RECEIPT");
+    const message = messages[0].payload as EmailMessage;
+    const attachments = await receiptEmailAttachments(message);
+    expect(attachments).toHaveLength(1);
+    expect(attachments[0].contentType).toBe("application/pdf");
+    expect(attachments[0].content.subarray(0, 5).toString()).toBe("%PDF-");
+    if (message.type !== "PAYMENT_RECEIPT") throw new Error("Expected receipt email");
+    const legacy = await receiptEmailAttachments({ ...message, receiptId: undefined });
+    expect(legacy).toHaveLength(1);
+    await expect(receiptEmailAttachments({ ...message, email: "other@example.com" })).rejects.toThrow("does not match");
   });
 
   it("records late capture without overbooking a reused seat", async () => {

@@ -37,7 +37,7 @@ export async function enqueuePaymentReceipt(bookingId: string) {
   if (existing) return;
   const token = await createAccountToken({ email: receipt.recipientEmail, purpose: "GUEST_BOOKING_ACCESS", bookingId, expiresInMs: 30 * 24 * 60 * 60 * 1000 });
   await queueEmail({ type: "PAYMENT_RECEIPT", email: receipt.recipientEmail, name: receipt.recipientName,
-    receiptNumber: receiptNumber(receipt.id), classTitle: receipt.classTitle,
+    receiptNumber: receiptNumber(receipt.id), receiptId: receipt.id, classTitle: receipt.classTitle,
     amount: formatMoney(receipt.amountPaid, receipt.currency),
     url: `${getServerEnv().APP_URL}/booking/receipt/${bookingId}?token=${encodeURIComponent(token)}`,
   }, dedupeKey);

@@ -3,7 +3,8 @@ import nodemailer, { type Transporter } from "nodemailer";
 import { and, asc, eq, lte, lt, or } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getServerEnv, resolveEmailProvider, type ServerEnv } from "@/lib/env";
-import { emailOutbox } from "@/db/schema";
+import { emailOutbox, paymentReceipts } from "@/db/schema";
+import { renderReceiptPdf } from "@/server/payments/receipt-pdf";
 
 let smtpTransporter: Transporter | undefined;
 
@@ -13,6 +14,7 @@ export type EmailMessage =
       email: string;
       name: string;
       receiptNumber: string;
+      receiptId?: string;
       classTitle: string;
       amount: string;
       url: string;
@@ -171,10 +173,24 @@ function renderMessage(message: EmailMessage): { subject: string; html: string; 
   }
 }
 
+export async function receiptEmailAttachments(message: EmailMessage): Promise<Array<{ filename: string; content: Buffer; contentType: string }>> {
+  if (message.type !== "PAYMENT_RECEIPT") return [];
+  // Older queued messages have the receipt number but not receiptId.
+  const id = message.receiptId;
+  const compactId = message.receiptNumber.replace(/^R-/, "").toLowerCase();
+  const legacyId = /^[a-f0-9]{32}$/.test(compactId)
+    ? compactId.replace(/^(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})$/, "$1-$2-$3-$4-$5") : undefined;
+  if (!id && !legacyId) throw new Error("Receipt email is missing a valid receipt reference");
+  const [receipt] = await getDb().select().from(paymentReceipts).where(eq(paymentReceipts.id, id ?? legacyId!)).limit(1);
+  if (!receipt || receipt.recipientEmail !== message.email) throw new Error("Receipt email does not match the saved payment receipt");
+  return [{ filename: `ANZ-Receipt-${receipt.id}.pdf`, content: await renderReceiptPdf(receipt), contentType: "application/pdf" }];
+}
+
 async function deliver(message: EmailMessage): Promise<void> {
   const env = getServerEnv();
   const rendered = renderMessage(message);
   const provider = resolveEmailProvider(env);
+  const attachments = await receiptEmailAttachments(message);
 
   if (provider === "smtp") {
     await getSmtpTransporter(env).sendMail({
@@ -183,6 +199,7 @@ async function deliver(message: EmailMessage): Promise<void> {
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
+      attachments,
     });
     return;
   }
@@ -201,6 +218,7 @@ async function deliver(message: EmailMessage): Promise<void> {
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
+      attachments: attachments.map(({ filename, content, contentType }) => ({ filename, content: content.toString("base64"), contentType })),
     });
     if (result.error) throw new Error(`Email provider rejected the message: ${result.error.message}`);
     return;
