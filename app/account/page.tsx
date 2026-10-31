@@ -1,14 +1,28 @@
 import Link from "next/link";
 import { getServerSession } from "@/server/auth/session";
 import { getCustomerBookings } from "@/server/catalogue/queries";
-import { EmptyState, LinkButton, MetricCard, StatusBadge } from "@/components/ui";
-import { formatDateTime, makePublicBookingReference } from "@/lib/utils";
+import { EmptyState, LinkButton, MetricCard } from "@/components/ui";
+import { BookingCard } from "@/components/booking-card";
 import { isUpcomingBooking } from "@/server/bookings/status";
 
 export default async function AccountOverviewPage() {
   const session = await getServerSession();
   if (!session) return null;
   const rows = await getCustomerBookings(session.user.id);
-  const upcoming = rows.filter((row) => isUpcomingBooking(row.booking.status, row.startAt)).sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
-  return <div><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="eyebrow text-[var(--fern)]">Customer account</p><h1 className="display mt-3 text-5xl leading-[.98] text-[var(--forest)]">Good to see you, {session.user.name.split(" ")[0]}.</h1><p className="mt-3 text-sm leading-6 text-[var(--muted)]">Your upcoming activities, booking records and payment status in one place.</p></div><LinkButton href="/classes">Browse classes</LinkButton></div><div className="mt-10 grid gap-4 sm:grid-cols-3"><MetricCard label="Upcoming" value={upcoming.length} detail="Active or confirmed bookings" href="/account/bookings" /><MetricCard label="All bookings" value={rows.length} detail="All booking records" href="/account/bookings" /><MetricCard label="Account" value="Secure" detail="Email and profile settings" href="/account/profile" /></div><section className="mt-12"><div className="flex items-center justify-between gap-4"><div><p className="eyebrow text-[var(--fern)]">Next in your record</p><h2 className="display mt-2 text-3xl text-[var(--forest)]">Upcoming</h2></div><Link href="/account/bookings" className="text-sm font-bold text-[var(--forest)] underline decoration-[var(--signal)] underline-offset-4">All bookings</Link></div>{upcoming.length ? <div className="mt-5 grid gap-6 md:grid-cols-2">{upcoming.map((row) => <Link key={row.booking.id} href={`/account/bookings/${row.booking.id}`} className="card-lift group rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-none"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.1em] text-[var(--fern)]">{formatDateTime(row.startAt, row.booking.timezoneSnapshot)}</p><h3 className="display mt-2 text-2xl text-[var(--forest)]">{row.booking.classTitleSnapshot}</h3><p className="mt-2 text-sm text-[var(--muted)]">{makePublicBookingReference(row.booking.id)}</p></div><StatusBadge status={row.booking.status} /></div></Link>)}</div> : <div className="mt-5"><EmptyState title="No upcoming bookings." description="You don’t have any confirmed or active CPD bookings yet." action={<LinkButton href="/classes">Browse classes</LinkButton>} /></div>}</section></div>;
+  const upcoming = rows.filter(row => isUpcomingBooking(row.booking.status, row.startAt)).sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+  return <div>
+    <div className="flex flex-wrap items-end justify-between gap-5">
+      <div><h1 className="display">Good to see you, {session.user.name.split(" ")[0]}.</h1><p className="mt-3 text-sm leading-6 text-[var(--muted)]">Your upcoming activities, booking records and payment status in one place.</p></div>
+      <LinkButton href="/classes">Browse classes</LinkButton>
+    </div>
+    <div className="mt-10 grid gap-4 sm:grid-cols-3">
+      <MetricCard label="Upcoming" value={upcoming.length} detail="Active or confirmed bookings" href="/account/bookings?view=upcoming" />
+      <MetricCard label="All bookings" value={rows.length} detail="All booking records" href="/account/bookings" />
+      <MetricCard label="Account" value="Secure" detail="Email and profile settings" href="/account/profile" />
+    </div>
+    <section className="mt-12">
+      <div className="flex items-center justify-between gap-4"><h2 className="display">Upcoming</h2><Link href="/account/bookings" className="ink-link">All bookings</Link></div>
+      {upcoming.length ? <div className="mt-5 grid gap-6 md:grid-cols-2">{upcoming.map(row => <BookingCard key={row.booking.id} booking={row.booking} startAt={row.startAt} />)}</div> : <div className="mt-5"><EmptyState title="No upcoming bookings." description="Browse the catalogue to find your next activity." action={<LinkButton href="/classes">Browse classes</LinkButton>} /></div>}
+    </section>
+  </div>;
 }

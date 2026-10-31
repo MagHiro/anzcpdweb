@@ -39,5 +39,5 @@ export function SignOutButton() {
     try { const response = await fetch("/api/auth/sign-out", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }); if (!response.ok) throw new Error("Sign out failed"); router.push("/"); router.refresh(); }
     catch { setError("Couldn’t sign out. Try again."); setPending(false); }
   }
-  return <><button type="button" disabled={pending} onClick={signOut} className="focus-ring text-sm font-semibold text-[var(--forest)] underline underline-offset-4">{pending ? "Signing out…" : "Sign out"}</button>{error && <p role="alert" className="mt-2 text-xs text-[var(--error)]">{error}</p>}</>;
+  return <><button type="button" disabled={pending} onClick={signOut} className="focus-ring bg-transparent px-0 text-sm font-semibold text-[var(--forest)] underline underline-offset-4">{pending ? "Signing out…" : "Sign out"}</button>{error && <p role="alert" className="mt-2 text-xs text-[var(--error)]">{error}</p>}</>;
 }

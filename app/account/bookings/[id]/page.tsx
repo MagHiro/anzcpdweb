@@ -41,7 +41,7 @@ export default async function CustomerBookingDetailPage({ params }: { params: Pr
       </section>
       <aside className="space-y-5">
         {row.booking.paidAt && <Link href={`/booking/receipt/${id}`} className="inline-flex rounded-lg border border-[var(--line)] bg-white px-5 py-3 text-sm font-semibold text-[var(--forest)]">View payment receipt</Link>}
-        <section className="rounded-xl bg-[var(--forest)] p-6 text-white"><h2 className="display text-2xl">Need help?</h2><p className="mt-3 text-sm leading-6 text-white/70">For refund questions, attendance changes or account support, contact the academy with your booking reference.</p><Link href="/contact" className="mt-5 inline-flex rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-[var(--forest)]">Contact support</Link></section>
+        <section className="rounded-xl bg-[var(--forest)] p-6 text-white"><h2 className="display text-2xl">Need help?</h2><p className="mt-3 text-sm leading-6 text-white/80">For refund questions, attendance changes or account support, contact the academy with your booking reference.</p><Link href="/account/support" className="mt-5 inline-flex rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-[var(--forest)]">Contact support</Link></section>
         {row.booking.status === "PENDING_PAYMENT" && <section className="rounded-xl border border-[var(--line)] bg-white p-6"><h2 className="display text-2xl text-[var(--forest)]">Cancel unpaid booking</h2><p className="my-4 text-sm leading-6 text-[var(--muted)]">This closes an unpaid Checkout session and releases the reserved place.</p><CancelBookingForm bookingId={row.booking.id} /></section>}
       </aside>
     </div>

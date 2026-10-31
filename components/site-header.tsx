@@ -47,7 +47,7 @@ export function SiteHeader() {
       <button ref={buttonRef} type="button" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="site-navigation" className="mobile-menu-trigger focus-ring md:hidden" onClick={() => setOpen(v => !v)}>{open ? <CloseIcon /> : <MenuIcon />}</button>
       <nav id="site-navigation" aria-label="Main navigation" className={cn("site-navigation", open && "is-open")}>
         {navigation.map(item => <Link key={item.href} href={item.href} aria-current={active(item.href) ? "page" : undefined} onClick={() => setOpen(false)} className={cn("site-nav-link focus-ring", active(item.href) && "is-active")}>{item.label}</Link>)}
-        <Link href="/sign-in" onClick={() => setOpen(false)} className="site-signin focus-ring">My account <ArrowUpRight size={17} /></Link>
+        <Link href="/account" onClick={() => setOpen(false)} className="site-signin focus-ring">My account <ArrowUpRight size={17} /></Link>
       </nav>
     </div>
   </header>;
@@ -59,7 +59,7 @@ export function SiteFooter() {
     <div className="mx-auto grid max-w-[1440px] gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[1.6fr_1fr_1fr] lg:px-12">
       <div><Link href="/" className="brand-lockup brand-inverse focus-ring"><AcademyMark /><span><strong>ANZ Migration</strong><small>Academy / CPD</small></span></Link><p className="mt-6 max-w-sm text-sm leading-7 text-[#b6cbc2]">Thoughtful professional development for migration agents and immigration advisers across Australia and New Zealand.</p><a className="mt-6 inline-flex items-center gap-2 text-sm text-white hover:opacity-80" href="mailto:info@anzmigrationacademy.com"><Mail size={16} /> info@anzmigrationacademy.com</a></div>
       <div><h3 className="footer-group-title">Explore</h3><div className="mt-5 grid gap-3 text-sm"><Link href="/classes">CPD activities</Link><Link href="/australia">Australia</Link><Link href="/new-zealand">New Zealand</Link><Link href="/cpd-requirements">CPD guide</Link><Link href="/presenters">Presenters</Link></div></div>
-      <div><h3 className="footer-group-title">Support & policies</h3><div className="mt-5 grid gap-3 text-sm"><Link href="/complaints">Complaints & resolution</Link><Link href="/complaints/procedure">Complaints procedure</Link><Link href="/refund-policy">Refunds and cancellations</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/sign-in">Learner account</Link></div></div>
+      <div><h3 className="footer-group-title">Support & policies</h3><div className="mt-5 grid gap-3 text-sm"><Link href="/complaints">Complaints & resolution</Link><Link href="/complaints/procedure">Complaints procedure</Link><Link href="/refund-policy">Refunds and cancellations</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/account">Learner account</Link></div></div>
     </div>
     <div className="mx-auto flex max-w-[1440px] flex-wrap justify-between gap-3 px-5 pb-8 text-xs leading-6 text-[#9eb8ab] sm:px-8 lg:px-12"><p>© {new Date().getFullYear()} AU &amp; NZ Migration Academy Pty Ltd · Trading as ANZ Migration Academy</p><p>Learning information should be checked against current professional requirements.</p></div>
   </footer>;

@@ -70,7 +70,7 @@ input, select, textarea { font: inherit; }
 .skip-link { position: fixed; top: -100px; left: 16px; z-index: 100; background: white; padding: 12px 20px; border: 1px solid var(--forest); }
 .skip-link:focus { top: 12px; }
 .display { font-family: var(--font-display), Arial, sans-serif; font-weight: 600; letter-spacing: -.02em; line-height: 1.17; }
-.eyebrow { font-family: ui-monospace, monospace; font-size: .75rem; font-weight: 400; letter-spacing: .02em; }
+.eyebrow { font-size: .8125rem; font-weight: 500; letter-spacing: 0; }
 .data-numeric { font-variant-numeric: tabular-nums; }
 .surface-rule, .hairline { border-color: var(--line); }
 .content-measure { max-width: 68rem; }
@@ -82,6 +82,10 @@ input, select, textarea { font: inherit; }
 .academy-site :is(h1, h2, h3), .workspace :is(h1, h2, h3) { font-family: var(--font-display), Arial, sans-serif; font-weight: 600; letter-spacing: -.015em; }
 .academy-site h1, .workspace h1.display { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.17; }
 .academy-site h2 { font-size: clamp(1.625rem, 3vw, 2.25rem); line-height: 1.23; }
+.workspace h2 { font-size: 28px; line-height: 36px; font-weight: 500; }
+.workspace h3 { font-size: 22px; line-height: 30px; font-weight: 500; }
+.academy-site :is([class*="text-[#809080]"], [class*="text-[#79917a]"], [class*="text-[#6b946c]"], [class*="text-[#729475]"]),
+.workspace [class*="text-[#7da181]"] { color: var(--muted); }
 .academy-site h1 { font-family: var(--font-display), Arial, sans-serif; }
 /* Existing content surfaces use the same mineral palette as the shared components. */
 .academy-site :is([class*="bg-[#e6ed"], [class*="bg-[#e7ee"], [class*="bg-[#e5ee"], [class*="bg-[#e6ef"], [class*="bg-[#e6ee"]) { background-color: var(--mist); }
@@ -95,11 +99,11 @@ input, select, textarea { font: inherit; }
 .card-lift:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-hover); }
 .soft-card, .metric-tile { border: 1px solid var(--line); box-shadow: none; }
 .activity-card { border: 1px solid var(--line); border-radius: var(--radius-surface); background: white; overflow: hidden; }
-.activity-card .activity-card-title { font-size: clamp(1.125rem, 1.6vw, 1.375rem); line-height: 1.4; font-weight: 500; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.activity-card .activity-card-title { font-size: 22px; line-height: 30px; font-weight: 500; letter-spacing: -.005em; overflow-wrap: anywhere; }
 .activity-card > div:first-child { background: transparent; }
 
 /* Quiet three-zone navigation; no floating or animated chrome. */
-.site-header { background: #fff; border-bottom: 1px solid var(--line); }
+.site-header { position: sticky; top: 0; z-index: var(--z-header); background: #fff; border-bottom: 1px solid var(--line); }
 .brand-lockup { display: inline-flex; align-items: center; gap: 12px; color: var(--forest); }
 .brand-lockup strong { display: block; font-size: 1rem; font-weight: 500; letter-spacing: -.03em; line-height: 1.2; }
 .brand-lockup small { display: block; margin-top: 4px; font-size: .7rem; }
@@ -215,7 +219,8 @@ label:has(> input[type=checkbox]:checked):has(> span) { border-color: #8eae96; b
 .workspace-footer a { text-decoration: underline; }
 .workspace h1.display { font-size: clamp(2rem, 3.5vw, 3rem); }
 .workspace h2.display { font-size: 1.75rem; }
-.workspace :is(.rounded-xl, .rounded-2xl, [class*="rounded-[1.2rem]"]) { border-radius: 32px; border: 1px solid var(--line); }
+.workspace :is(article, section, .surface-grid)[class*="rounded"] { border-radius: var(--radius-surface); }
+.workspace :is(button, a)[class*="rounded"]:not([class*="rounded-full"], .booking-card) { border-radius: var(--radius-control); }
 .workspace a:has(> .metric-tile) { border: 0; }
 .workspace .metric-tile { border-radius: 24px; }
 .workspace table { border-collapse: collapse; width: 100%; font-size: .8125rem; background: white; }
@@ -276,7 +281,29 @@ dialog::backdrop { background: #152a2260; }
 .guide-navigation a { padding: 10px 12px; border-radius: 12px; font-size: 13px; }
 .guide-navigation a:hover { background: var(--mist); }
 .guide-content { min-width: 0; border-left: 1px solid var(--line); }
-.guide-content section { background: transparent; }
+.guide-content > section:not(.guide-cta) { background: transparent; }
+.guide-cta { background: var(--forest); color: white; }
+.guide-cta p { color: #def6eb; }
+.guide-cta h2 { color: white; }
+.booking-card { display: block; padding: 24px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface); }
+.booking-card:hover { border-color: var(--color-border-strong); background: var(--mist); }
+.booking-card-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.booking-card-date { font-size: 13px; font-weight: 500; color: var(--muted); }
+.workspace .booking-card-title { margin-top: 16px; font-size: 22px; line-height: 30px; font-weight: 500; letter-spacing: -.005em; overflow-wrap: anywhere; }
+.booking-card-meta { margin-top: 12px; font-size: 13px; color: var(--muted); }
+.booking-card-action { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; font-size: 14px; font-weight: 600; color: var(--forest); text-decoration: underline; text-underline-offset: 4px; }
+/* Native controls are full-width in forms, but share a single row in record filters. */
+.workspace form[method="get"] { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; border-radius: 16px; }
+.workspace form[method="get"] > input:not([type="hidden"]) { flex: 1 1 200px; width: auto; min-width: 0; }
+.workspace form[method="get"] > select { flex: 0 1 200px; width: auto; min-width: 0; }
+.workspace form[method="get"] > :is(button, a) { flex: none; }
+.workspace form[method="get"] :is(input, select, button) { min-height: 48px; border-radius: var(--radius-control); }
+@media (min-width: 901px) {
+  .workspace form[method="get"] { flex-wrap: nowrap; }
+  .workspace form[method="get"] > select { flex-shrink: 1; }
+}
+.academy-site :is(a, button)[class*="rounded-full"]:not(.brand-lockup),
+.workspace :is(a, button)[class*="rounded-full"] { border-radius: var(--radius-control); }
 .guide-content [class*="lg:grid-cols-"] { grid-template-columns: 1fr; }
 .guide-content [data-float] { border: 1px solid var(--line); border-radius: 24px; }
 
@@ -307,6 +334,9 @@ dialog::backdrop { background: #152a2260; }
   .workspace-topbar, .workspace-footer { padding: 18px 20px; }
 }
 @media (max-width: 640px) {
+  .workspace form[method="get"] > input:not([type="hidden"]), .workspace form[method="get"] > select { flex-basis: 100%; width: 100%; }
+  .booking-card { padding: 20px; }
+  .workspace .booking-card-title { font-size: 20px; line-height: 28px; }
   .academy-site[data-page$="/book"] aside { border-left: 0; border-top: 1px solid var(--line); }
   .workspace-admin form > section { padding: 24px; }
   .settings-form .form-field { display: flex; }
