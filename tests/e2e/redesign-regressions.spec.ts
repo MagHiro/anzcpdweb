@@ -1,5 +1,18 @@
 import { expect, test } from "@playwright/test";
 
+test("page containers share a 1440px maximum width", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  for (const route of ["/", "/classes", "/cpd-requirements", "/booking/success"]) {
+    await page.goto(route);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const containers = page.locator(".page-container");
+    await expect(containers.first()).toBeVisible();
+    for (const container of await containers.all()) {
+      await expect(container).toHaveCSS("max-width", "1440px");
+    }
+  }
+});
+
 test("CPD call to action keeps its dark surface and readable text", async ({ page }) => {
   await page.goto("/cpd-requirements");
   const cta = page.locator(".guide-cta");

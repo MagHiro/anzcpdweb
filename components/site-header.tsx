@@ -40,7 +40,7 @@ export function SiteHeader() {
     return () => { document.body.style.overflow = prev; document.removeEventListener("keydown", onKey); };
   }, [open]);
   return <header className="site-header sticky top-0 z-40">
-    <div className="mx-auto flex min-h-[88px] max-w-[1440px] items-center justify-between gap-6 px-5 sm:px-8 lg:px-12">
+    <div className="site-header-inner mx-auto flex max-w-[1440px] items-center justify-between gap-6 px-5 sm:px-8 lg:px-12">
       <Link href="/" className="brand-lockup focus-ring" onClick={() => setOpen(false)} aria-label="ANZ Migration Academy home">
         <AcademyMark /><span><strong>ANZ Migration</strong><small>Academy / CPD</small></span>
       </Link>
@@ -55,12 +55,11 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return <footer className="site-footer">
-    <div className="footer-cta"><div className="mx-auto max-w-[1440px] px-5 py-16 sm:px-8 lg:px-12 lg:py-20"><div className="flex flex-wrap items-end justify-between gap-8"><h2 className="display max-w-2xl text-4xl sm:text-6xl">Ready for what’s next?</h2><Link href="/classes" className="footer-cta-button focus-ring">Find your next activity <ArrowUpRight size={19} /></Link></div></div></div>
     <div className="mx-auto grid max-w-[1440px] gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[1.6fr_1fr_1fr] lg:px-12">
       <div><Link href="/" className="brand-lockup brand-inverse focus-ring"><AcademyMark /><span><strong>ANZ Migration</strong><small>Academy / CPD</small></span></Link><p className="mt-6 max-w-sm text-sm leading-7 text-[#b6cbc2]">Thoughtful professional development for migration agents and immigration advisers across Australia and New Zealand.</p><a className="mt-6 inline-flex items-center gap-2 text-sm text-white hover:opacity-80" href="mailto:info@anzmigrationacademy.com"><Mail size={16} /> info@anzmigrationacademy.com</a></div>
       <div><h3 className="footer-group-title">Explore</h3><div className="mt-5 grid gap-3 text-sm"><Link href="/classes">CPD activities</Link><Link href="/australia">Australia</Link><Link href="/new-zealand">New Zealand</Link><Link href="/cpd-requirements">CPD guide</Link><Link href="/presenters">Presenters</Link></div></div>
-      <div><h3 className="footer-group-title">Support & policies</h3><div className="mt-5 grid gap-3 text-sm"><Link href="/complaints">Complaints & resolution</Link><Link href="/complaints/procedure">Complaints procedure</Link><Link href="/refund-policy">Refunds and cancellations</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/account">Learner account</Link></div></div>
+      <div><h3 className="footer-group-title">Support & policies</h3><div className="mt-5 grid gap-3 text-sm"><Link href="/contact">Contact us</Link><Link href="/complaints">Complaints & resolution</Link><Link href="/complaints/procedure">Complaints procedure</Link><Link href="/refund-policy">Refunds and cancellations</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/account">Learner account</Link></div></div>
     </div>
-    <div className="mx-auto flex max-w-[1440px] flex-wrap justify-between gap-3 px-5 pb-8 text-xs leading-6 text-[#9eb8ab] sm:px-8 lg:px-12"><p>© {new Date().getFullYear()} AU &amp; NZ Migration Academy Pty Ltd · Trading as ANZ Migration Academy</p><p>Learning information should be checked against current professional requirements.</p></div>
+    <div className="mx-auto flex max-w-[1440px] flex-wrap justify-between gap-3 px-5 pb-8 text-xs leading-6 text-[#9eb8ab] sm:px-8 lg:px-12"><p>© {new Date().getFullYear()} AU &amp; NZ Migration Academy Pty Ltd · Trading as ANZ Migration Academy · ABN: 19700088526</p><p>Learning information should be checked against current professional requirements.</p></div>
   </footer>;
 }

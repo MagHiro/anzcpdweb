@@ -4,7 +4,7 @@ import { ArrowUpRight } from "@/components/icon";
 import { ClassCard, Container, EmptyState, LinkButton, Section, type ActivityCardItem } from "@/components/ui";
 
 type Item = ActivityCardItem & { id: string };
-type Props = { code: "AU" | "NZ"; label: string; headline: string; summary: string; themes: string[]; context: string; items: Item[]; unavailable: boolean };
+type Props = { code: "AU" | "NZ"; label: string; headline: string; summary: string; themes: string[]; context?: string; items: Item[]; unavailable: boolean };
 
 export function CountryLanding({ code, label, headline, summary, themes, context, items, unavailable }: Props) {
   return <>
@@ -21,9 +21,9 @@ export function CountryLanding({ code, label, headline, summary, themes, context
         <Image src={code === "AU" ? "/australia.jpg" : "/new-zealand.jpg"} alt={code === "AU" ? "Sydney harbour, Australia" : "New Zealand landscape"} width={1000} height={670} className="country-image" priority />
       </Container>
     </Section>
-    <Section><Container className="grid gap-12 lg:grid-cols-[.75fr_1.25fr]">
-      <h2 className="max-w-md text-4xl sm:text-5xl">Topics for the work you do.</h2>
-      <div><div className="grid gap-4 sm:grid-cols-3">{themes.map(theme => <div key={theme} className="country-topics"><h3 className="text-2xl leading-tight">{theme}</h3></div>)}</div><p className="mt-6 text-base leading-7 text-[var(--muted)]">{context}</p></div>
+    <Section className="country-topic-section"><Container className="country-topic-layout">
+      <h2>Topics for the work you do.</h2>
+      <div className="min-w-0"><div className="country-topic-grid">{themes.map(theme => <div key={theme} className="country-topics"><h3>{theme}</h3></div>)}</div>{context && <p className="mt-6 text-base leading-7 text-[var(--muted)]">{context}</p>}</div>
     </Container></Section>
     <Section className="border-t border-[var(--line)]"><Container>
       <div className="flex flex-wrap items-end justify-between gap-6"><h2 className="text-4xl sm:text-5xl">Upcoming in {label}.</h2><Link href={`/classes?country=${code}`} className="ink-link">View all activities <ArrowUpRight size={18} /></Link></div>

@@ -11,7 +11,7 @@ export type BadgeTone = "neutral" | "green" | "amber" | "red" | "blue";
 export type ButtonSize = "sm" | "md" | "lg";
 
 export function Container({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("mx-auto w-full max-w-[1280px] px-5 md:px-8 xl:px-12", className)} {...props} />;
+  return <div className={cn("page-container mx-auto w-full px-5 md:px-8 xl:px-12", className)} {...props} />;
 }
 
 export function Section({ className, children, ...props }: ComponentProps<"section">) {
@@ -121,22 +121,22 @@ export type ActivityCardItem = { slug: string; title: string; shortDescription: 
 export function ActivityCard({ item }: { item: ActivityCardItem }) {
   const cpd = getCpdLabel(item.cpdUnitType, item.cpdUnitAmount);
   const date = <VisitorTime startAt={new Date(item.startAt).toISOString()} timezone={item.timezone} allowConversion={item.deliveryFormat === "ONLINE"} />;
-  return <article className="card-lift activity-card group flex h-full min-w-0 flex-col bg-white">
+  return <article className="card-lift activity-card group flex h-full min-w-0 flex-col">
     <div className="flex items-center justify-between gap-4 px-6 pt-6">
-      <span className="text-xs font-medium text-[var(--fern)]">{getCountryConfig(item.country).name}</span>
-      <span className="text-xs text-[var(--muted)]">{formatStatusLabel(item.deliveryFormat)}</span>
+      <span className="text-xs font-semibold tracking-[.04em] text-[var(--fern)]">{getCountryConfig(item.country).name}</span>
+      <span className="rounded-full bg-[var(--mist)] px-3 py-1 text-xs text-[var(--muted)]">{formatStatusLabel(item.deliveryFormat)}</span>
     </div>
-    <div className="flex flex-1 flex-col px-6 pb-6 pt-5">
+    <div className="flex flex-1 flex-col px-6 pb-6 pt-6">
       <h3 className="activity-card-title"><Link href={`/classes/${item.slug}`} className="focus-ring rounded-sm underline-offset-4 group-hover:underline">{item.title}</Link></h3>
-      <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--muted)]">{item.shortDescription}</p>
+      <p className="mt-3 line-clamp-2 text-[15px] leading-6 text-[var(--muted)]">{item.shortDescription}</p>
       {item.presenterName && <p className="mt-4 text-xs text-[var(--muted)]">With <span className="font-medium text-[var(--ink)]">{item.presenterName}</span></p>}
-      <dl className="mt-6 grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-5 border-t border-[var(--line)] pt-5 text-sm">
+      <dl className="mt-6 grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-5 rounded-2xl bg-[var(--mist)] p-4 text-sm">
         <div><dt className="text-xs text-[var(--muted)]">Date & time</dt><dd className="mt-2 font-medium leading-6">{date}</dd></div>
         <div><dt className="text-xs text-[var(--muted)]">CPD</dt><dd className="mt-2 font-medium leading-6">{cpd ?? "Not specified"}{item.cpdActivityCategory && <span className="mt-1 block text-xs font-normal text-[var(--muted)]">{item.cpdActivityCategory}</span>}</dd></div>
       </dl>
-      <div className="mt-auto pt-6"><div className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--line)] pt-5">
+      <div className="mt-auto pt-6"><div className="flex flex-wrap items-center justify-between gap-4">
         <div><p className="text-xl text-[var(--forest)]"><Price amount={item.priceMinorUnits} currency={item.currency} /></p>{item.remainingSeats !== null && <p className="mt-1 text-xs text-[var(--muted)]">{item.remainingSeats === 0 ? "Sold out" : `${item.remainingSeats} places available`}</p>}</div>
-        <LinkButton href={`/classes/${item.slug}`} variant="secondary" size="sm">View details ↗</LinkButton>
+         <LinkButton href={`/classes/${item.slug}`} size="sm" aria-label={`View details: ${item.title}`}>View details ↗</LinkButton>
       </div></div>
     </div>
   </article>;

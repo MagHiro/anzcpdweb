@@ -72,18 +72,18 @@ export function VisitorPreferences() {
   const close = () => { setOpen(false); button.current?.focus(); };
 
   return <div className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:right-6">
-    {open && <div ref={panel} id={panelId} role="region" aria-label="Country and timezone" onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); close(); } }} className="w-80 max-w-full max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain rounded-xl border border-[var(--line)] bg-white p-5 text-[var(--forest)] shadow-lg">
-      <div className="flex items-center justify-between gap-4"><h2 className="text-base font-semibold">Country & timezone</h2><button type="button" onClick={close} aria-label="Close country and timezone" className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl">×</button></div>
+    {open && <div ref={panel} id={panelId} role="region" aria-label="Country and timezone" onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); close(); } }} className="visitor-preferences-panel max-w-full max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain bg-white text-[var(--forest)]">
+      <div className="flex items-center justify-between gap-4"><h2>Country & timezone</h2><button type="button" onClick={close} aria-label="Close country and timezone" className="preferences-close focus-ring"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>
       <p className="mt-2 text-sm text-[var(--muted)]">Online class times use your timezone. Change it anytime.</p>
       <label htmlFor={countryId} className="mt-4 mb-2 block text-sm">Country</label>
       <select id={countryId} value={country} className="focus-ring w-full min-w-0" onChange={event => { setCountry(event.target.value); try { localStorage.setItem(countryKey, event.target.value); } catch { /* Retain in memory. */ } }}>
         <option value="AU">Australia</option><option value="NZ">New Zealand</option><option value="OTHER">Other country</option>
       </select>
       <TimezoneSelector timezone="Australia/Sydney" label="Your timezone" ignoreClassContext />
-      <Link href={country === "OTHER" ? "/classes" : `/classes?country=${country}`} className="focus-ring mt-5 inline-block rounded-full bg-[var(--forest)] px-5 py-3 text-sm font-semibold text-white" onClick={() => setOpen(false)}>Browse activities</Link>
+      <Link href={country === "OTHER" ? "/classes" : `/classes?country=${country}`} className="focus-ring mt-6 flex min-h-12 w-full items-center justify-center rounded-2xl bg-[var(--forest)] px-6 py-3 text-sm font-semibold text-white" onClick={() => setOpen(false)}>Browse activities</Link>
     </div>}
     <button ref={button} type="button" aria-expanded={open} aria-controls={panelId} aria-label="Choose country and timezone" onClick={() => { setOpen(!open); if (!open) requestAnimationFrame(() => panel.current?.querySelector<HTMLButtonElement>("button")?.focus()); }} className="focus-ring flex max-w-full items-center gap-2 rounded-full bg-[var(--forest)] px-4 py-3 text-sm font-semibold text-white shadow-lg">
-      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="9" /><ellipse cx="12" cy="12" rx="4" ry="9" /><path d="M3 12h18M5 7h14M5 17h14" /></svg>
+      <svg aria-hidden="true" className="shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="9" /><ellipse cx="12" cy="12" rx="4" ry="9" /><path d="M3 12h18M5 7h14M5 17h14" /></svg>
       <span className="truncate">{timezone.replaceAll("_", " ")}</span>
     </button>
   </div>;

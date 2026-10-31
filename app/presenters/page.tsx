@@ -3,13 +3,23 @@ import Link from "next/link";
 import { ArrowUpRight } from "@/components/icon";
 import { Container, EmptyState, Section } from "@/components/ui";
 import { getPresenters } from "@/server/catalogue/queries";
+import { presenterInitials } from "@/lib/presenter-initials";
 export const metadata: Metadata = { title: "Presenters", description: "Meet the migration professionals and facilitators behind ANZ Migration Academy CPD activities." };
 export const dynamic = "force-dynamic";
 export default async function PresentersPage() {
   let unavailable = false;
   let profiles: Awaited<ReturnType<typeof getPresenters>> = [];
   try { profiles = await getPresenters(); } catch { unavailable = true; }
-  return <><section className="bg-[#e6ede0]"><Container className="grid gap-10 py-20 sm:py-28 lg:grid-cols-[1.15fr_.85fr] lg:items-end"><div><p className="text-sm font-semibold text-[var(--fern)]">Our presenters</p><h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[1.04] tracking-[-.06em] text-[var(--forest)] sm:text-7xl">Learn from people who know the work.</h1></div><p className="max-w-xl text-lg leading-8 text-[var(--muted)]">The academy’s presenters bring real-world experience, professional judgment and practical context to each session.</p></Container></section>
-  <Section><Container>{profiles.length ? <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{profiles.map((presenter)=><article key={presenter.slug} className="card-lift group flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-white"><div className="flex justify-center pt-8"><span className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--mist)] text-3xl font-semibold text-[var(--forest)]">{presenter.initials}</span></div><div className="flex flex-1 flex-col p-7"><p className="text-sm font-medium text-[var(--fern)]">{presenter.role}</p><h2 className="mt-3 text-2xl font-semibold tracking-[-.045em]">{presenter.name}</h2><p className="mt-4 line-clamp-4 text-sm leading-7 text-[var(--muted)]">{presenter.bio}</p><div className="mt-6 flex flex-wrap gap-2">{presenter.expertise.slice(0,3).map(skill=><span key={skill} className="rounded-full bg-[#eaf0e3] px-3 py-1.5 text-xs font-medium text-[#3c6545]">{skill}</span>)}</div><Link href={"/presenters/"+presenter.slug} className="ink-link mt-auto pt-7">Meet {presenter.name.split(" ")[0]} <ArrowUpRight size={17} /></Link></div></article>)}</div> : <EmptyState title={unavailable ? "We couldn’t load our presenters." : "Presenter profiles are coming soon."} description={unavailable ? "Please try again shortly or contact the academy." : "Profiles will be published as new classes and presenters are announced."} />}</Container></Section>
-  <section className="bg-[#e7f0de]"><Container className="flex flex-wrap items-center justify-between gap-7 py-12"><div><h2 className="text-2xl font-semibold tracking-[-.04em]">Interested in working with the academy?</h2><p className="mt-2 max-w-xl text-sm leading-7 text-[var(--muted)]">Get in touch about presenting or arranging a private learning programme.</p></div><a href="mailto:info@anzmigrationacademy.com" className="ink-link">Contact us <ArrowUpRight size={18} /></a></Container></section></>;
+  return <>
+    <section className="presenters-introduction"><Container><h1>Our presenters</h1></Container></section>
+    <Section className="presenters-list"><Container>
+      {profiles.length ? <div className="presenters-grid">{profiles.map(presenter => <article key={presenter.slug} className="presenter-profile-card">
+        <div className="presenter-profile-heading"><span className="presenter-profile-avatar" aria-hidden="true">{presenterInitials(presenter.name)}</span><div className="min-w-0"><h2>{presenter.name}</h2>{presenter.role && <p>{presenter.role}</p>}</div></div>
+        {presenter.bio && <p className="presenter-profile-bio">{presenter.bio}</p>}
+        {presenter.expertise.length > 0 && <ul className="presenter-profile-expertise" aria-label="Expertise">{presenter.expertise.slice(0,3).map(skill => <li key={skill}>{skill}</li>)}</ul>}
+        <Link href={"/presenters/"+presenter.slug} className="presenter-profile-link focus-ring" aria-label={`View profile: ${presenter.name}`}>View profile <ArrowUpRight size={18} /></Link>
+      </article>)}</div> : <EmptyState title={unavailable ? "We couldn’t load our presenters." : "No presenters published yet."} description={unavailable ? "Please try again shortly." : ""} />}
+      <div className="presenters-contact"><h2>Present with the academy</h2><a href="mailto:info@anzmigrationacademy.com" className="ink-link focus-ring">Contact us <ArrowUpRight size={18} /></a></div>
+    </Container></Section>
+  </>;
 }
