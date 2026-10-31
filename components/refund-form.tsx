@@ -20,5 +20,5 @@ export function AdminCancelBookingForm({ bookingId }: { bookingId: string }) {
     try { return await cancelBookingByAdminAction(formData); }
     catch { return { ok: false, message: "Cancellation could not be confirmed. Reload the booking to check its current status before retrying." }; }
   }, { ok: false });
-  return <ConfirmForm action={action} className="space-y-2" message="Cancel this booking? Any refund remains a separate, explicit action."><input type="hidden" name="bookingId" value={bookingId} /><button type="submit" disabled={pending} className="focus-ring rounded-lg border border-[#e8bbb6] px-5 py-3 text-sm font-bold text-[var(--error)]">{pending ? "Cancelling…" : "Cancel booking (refund separately)"}</button>{state.message ? <FormNotice tone={state.ok ? "success" : "error"}>{state.message}</FormNotice> : null}</ConfirmForm>;
+  return <ConfirmForm action={action} className="space-y-2" message="Cancel this booking? Any refund remains a separate, explicit action."><input type="hidden" name="bookingId" value={bookingId} /><Button type="submit" variant="danger" disabled={pending}>{pending ? "Cancelling…" : "Cancel booking"}</Button>{state.message ? <FormNotice tone={state.ok ? "success" : "error"}>{state.message}</FormNotice> : null}</ConfirmForm>;
 }

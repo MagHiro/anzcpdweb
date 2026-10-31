@@ -150,8 +150,21 @@ export async function saveClass(input: {
   mediaAltText?: string;
   seoTitle?: string;
   seoDescription?: string;
+  sourceIds?: string[];
 }) {
-  const db = getDb();
+  return getDb().transaction(async (db) => {
+  const sourceIds = input.sourceIds === undefined ? undefined : [...new Set(input.sourceIds)];
+  if (sourceIds?.length) {
+    const attached = input.id ? await db.select({ id: classSourceReferences.sourceReferenceId }).from(classSourceReferences).where(eq(classSourceReferences.classId, input.id)) : [];
+    const attachedIds = new Set(attached.map(source => source.id));
+    const sources = await db.select({ id: sourceReferences.id, jurisdiction: sourceReferences.jurisdiction }).from(sourceReferences).where(inArray(sourceReferences.id, sourceIds));
+    if (sources.length !== sourceIds.length || sources.some(source => source.jurisdiction !== input.country && !attachedIds.has(source.id))) throw new Error("New source references must match the class country.");
+  }
+  async function saveSources(classId: string) {
+    if (sourceIds === undefined) return;
+    await db.delete(classSourceReferences).where(eq(classSourceReferences.classId, classId));
+    if (sourceIds.length) await db.insert(classSourceReferences).values(sourceIds.map(sourceReferenceId => ({ classId, sourceReferenceId })));
+  }
   const category = await db.select({ country: categories.country }).from(categories).where(eq(categories.id, input.categoryId)).limit(1);
   if (!category[0] || category[0].country !== input.country) throw new Error("Choose a category from the selected country.");
   if (input.presenterId) {
@@ -198,10 +211,13 @@ export async function saveClass(input: {
     }
     const [updated] = await db.update(classes).set(data).where(eq(classes.id, input.id)).returning();
     if (!updated) throw new Error("Class not found.");
+    await saveSources(updated.id);
     return updated;
   }
   const [created] = await db.insert(classes).values({ ...data, status: "DRAFT" }).returning();
+  await saveSources(created.id);
   return created;
+  });
 }
 
 export async function duplicateClass(id: string) {

@@ -53,10 +53,10 @@ export function Workspace({ children, name, admin = false }: { children: ReactNo
   return <AdminFeedback><div className={"workspace " + (admin ? "workspace-admin" : "workspace-account")}>
     <a href="#workspace-main" className="workspace-skip">Skip to content</a>
     <aside className="workspace-sidebar">
-      <Link href="/" className="workspace-brand"><span className="workspace-symbol">A<span>↗</span></span><span className="workspace-brand-label">ANZ Academy<small>{admin ? "Operations workspace" : "Your learning space"}</small></span></Link>
+      <Link href="/" className="workspace-brand focus-ring"><span className="workspace-symbol" aria-hidden="true">A<span>↗</span></span><span className="workspace-brand-label">ANZ Academy<small>{admin ? "Administration" : "My account"}</small></span></Link>
       <button type="button" className="workspace-menu-toggle focus-ring" aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen(value => !value)}>{menuOpen ? "Close menu ×" : "Menu ☰"}</button>
       <nav id="workspace-navigation" data-open={menuOpen} aria-label={admin ? "Administration" : "Account"}>{groups.map(group => <details className="workspace-nav-group" key={group.label} open><summary>{group.label}</summary>{group.links.map(item => <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} aria-current={active(item.href) ? "page" : undefined}><NavGlyph name={item.icon} /><span>{item.label}</span>{active(item.href) && <span className="workspace-active-dot" aria-hidden="true" />}</Link>)}</details>)}</nav>
-      <div className="workspace-identity"><span className="identity-avatar">{name.slice(0, 1).toUpperCase()}</span><div><p>{name}</p><SignOutButton /></div></div>
+      <div className="workspace-identity"><span className="identity-avatar" aria-hidden="true">{name.trim().split(/\s+/).filter(Boolean).filter((_, index, words) => index === 0 || index === words.length - 1).map(word => word[0]).join("").toUpperCase()}</span><div><p title={name}>{name}</p><SignOutButton /></div></div>
     </aside>
     <div className="workspace-body">
       <header className="workspace-topbar"><div><span className="workspace-location">{admin ? "Administration" : "My learning"} / <strong>{current.label}</strong></span></div><Link href="/classes">Explore CPD activities <span aria-hidden="true">↗</span></Link></header>

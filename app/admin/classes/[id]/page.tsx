@@ -1,7 +1,30 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdminBookingRows, getAdminClassById, getClassSourceOptions, getCategories, getPresenters } from "@/server/catalogue/queries";
-import { AdminClassActions, AdminClassForm, ClassSourceReferenceForm } from "@/components/admin-forms";
+import { AdminClassActions, AdminClassForm } from "@/components/admin-forms";
+import { StatusBadge } from "@/components/ui";
 import { uuidSchema } from "@/lib/validation";
 
-export default async function AdminClassDetailPage({ params }: { params: Promise<{ id: string }> }) { const { id } = await params; if (!uuidSchema.safeParse(id).success) notFound(); const row = await getAdminClassById(id); if (!row) notFound(); const [categories, presenters, sourceOptions, affectedBookings] = await Promise.all([getCategories(undefined, true), getPresenters(true), getClassSourceOptions(id, row.class.country), getAdminBookingRows({ classId: id, page: 1, pageSize: 20 })]); const { sources, selectedIds } = sourceOptions; return <div><Link href="/admin/classes" className="text-sm font-bold text-[var(--forest)] underline underline-offset-4">← All classes</Link><div className="mt-5 flex flex-wrap items-end justify-between gap-5"><div><p className="eyebrow text-[var(--fern)]">Class workspace</p><h1 className="display mt-3 text-5xl text-[var(--forest)]">{row.class.title}</h1><p className="mt-3 text-sm text-[var(--muted)]">{row.class.status} · {row.class.country} · {row.categoryName}</p></div><div className="flex flex-wrap gap-2"><AdminClassActions classRecord={row.class} /></div></div>{affectedBookings.length ? <div className="mt-8 rounded-xl border border-[#e8d2af] bg-[#fffaf2] p-6"><p className="eyebrow text-[var(--warning)]">Affected bookings</p><p className="mt-2 text-sm leading-6 text-[var(--muted)]">Changing class status does not automatically refund attendees. Review the booking records and use the explicit refund workflow where appropriate.</p><div className="mt-4 flex flex-wrap items-center gap-4"><Link href={`/admin/bookings?classId=${encodeURIComponent(id)}`} className="font-bold text-[var(--forest)] underline underline-offset-4">Review {affectedBookings.length === 20 ? "bookings" : `${affectedBookings.length} booking${affectedBookings.length === 1 ? "" : "s"}`}</Link></div></div> : null}<div className="mt-8"><AdminClassForm classRecord={row.class} categories={categories} presenters={presenters} /></div><div className="mt-8 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-none"><p className="eyebrow text-[var(--fern)]">Source references</p><p className="mt-2 text-sm leading-6 text-[var(--muted)]">Attach the official references used to check this activity. New references must match the class country. Existing attachments from another country are shown so you can review or remove them.</p><Link href="/admin/source-references" className="mt-3 inline-block text-sm font-semibold text-[var(--forest)] underline underline-offset-4">Manage source references</Link><ClassSourceReferenceForm country={row.class.country} classId={id} sources={sources} selectedIds={selectedIds} /></div></div>; }
+export default async function AdminClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  if (!uuidSchema.safeParse(id).success) notFound();
+  const row = await getAdminClassById(id);
+  if (!row) notFound();
+  const [categories, presenters, sourceOptions, affectedBookings] = await Promise.all([
+    getCategories(undefined, true), getPresenters(true), getClassSourceOptions(id, row.class.country),
+    getAdminBookingRows({ classId: id, page: 1, pageSize: 20 }),
+  ]);
+  const { sources, selectedIds } = sourceOptions;
+  return <div className="class-detail-editor">
+    <Link href="/admin/classes" className="class-back-link focus-ring">← All classes</Link>
+    <header className="class-editor-heading">
+      <div className="min-w-0"><h1 className="display">{row.class.title}</h1><div className="class-editor-meta"><StatusBadge status={row.class.status} /><span>{row.class.country === "AU" ? "Australia" : "New Zealand"} · {row.categoryName}</span></div></div>
+      <div className="class-editor-actions"><AdminClassActions classRecord={row.class} /></div>
+    </header>
+    {affectedBookings.length > 0 && <aside className="class-booking-notice" aria-label="Affected bookings">
+      <p>Status changes do not automatically refund attendees. Review bookings and use the refund workflow where needed.</p>
+      <Link href={`/admin/bookings?classId=${encodeURIComponent(id)}`} className="focus-ring">Review {affectedBookings.length === 20 ? "bookings" : `${affectedBookings.length} booking${affectedBookings.length === 1 ? "" : "s"}`} →</Link>
+    </aside>}
+    <AdminClassForm classRecord={row.class} categories={categories} presenters={presenters} sources={sources} selectedSourceIds={selectedIds} />
+  </div>;
+}

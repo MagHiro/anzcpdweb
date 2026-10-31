@@ -132,6 +132,8 @@ export async function saveClassAction(formData: FormData): Promise<AdminActionSt
   const session = await requireAdminSession();
   const raw = toFormObject(formData);
   const timezone = raw.timezone;
+  const sourceIds = formData.has("includeSources") ? [...new Set(formData.getAll("sourceIds").map(String))] : undefined;
+  if (sourceIds?.some(id => !uuidSchema.safeParse(id).success)) return { ok: false, message: "One or more source references are invalid." };
   try {
     const parsed = classFormSchema.safeParse({
       ...raw,
@@ -141,7 +143,8 @@ export async function saveClassAction(formData: FormData): Promise<AdminActionSt
       bookingClosesAt: parseLocalDateTime(raw.bookingClosesAt, timezone),
     });
     if (!parsed.success) return { ok: false, message: "Review the class fields.", fieldErrors: fieldErrors(parsed.error) };
-    const classRecord = await saveClass({ ...parsed.data, id: parsed.data.id || undefined, unlimitedCapacity: parsed.data.unlimitedCapacity === "true", professionalIdentifierRequired: parsed.data.professionalIdentifierRequired === "true", isUnlisted: parsed.data.isUnlisted === "true" });
+    const classRecord = await saveClass({ ...parsed.data, sourceIds, id: parsed.data.id || undefined, unlimitedCapacity: parsed.data.unlimitedCapacity === "true", professionalIdentifierRequired: parsed.data.professionalIdentifierRequired === "true", isUnlisted: parsed.data.isUnlisted === "true" });
+    if (sourceIds !== undefined) await writeAuditLog({ actorUserId: session.user.id, action: "CLASS_SOURCE_REFERENCES_UPDATED", entityType: "class", entityId: classRecord.id, metadata: { count: sourceIds.length } });
     await writeAuditLog({ actorUserId: session.user.id, action: parsed.data.id ? "CLASS_UPDATED" : "CLASS_CREATED", entityType: "class", entityId: classRecord.id, metadata: { country: classRecord.country, title: classRecord.title } });
     revalidatePath("/admin/classes");
     revalidatePath(`/admin/classes/${classRecord.id}`);
