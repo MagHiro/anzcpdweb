@@ -111,7 +111,7 @@ export function AdminClassForm({ classRecord, categories, presenters: presenterO
   }, [state.ok, state.id, classRecord, onSaved, router]);
 
   return <form action={action} className="space-y-6"><nav aria-label="Class editor sections" className="flex flex-wrap gap-2 rounded-lg border border-[var(--line)] bg-white p-3">{["Basics", "Schedule", "Capacity", "Pricing", "Media"].map((label, index) => <a key={label} href={`#editor-${index}`} className="rounded-md px-3 py-2 text-xs font-semibold hover:bg-[var(--mist)]">{label}</a>)}</nav><input type="hidden" name="id" value={classRecord?.id ?? ""} /><FormNotice tone={state.ok ? "success" : "error"} className="mb-1">{state.message}</FormNotice>
-    <section id="editor-0" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><p className="eyebrow text-[var(--fern)]">Basic information</p><div className="mt-5 grid gap-5 sm:grid-cols-2">
+    <section id="editor-0" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Basic information</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
       <Field label="Title" required error={state.fieldErrors?.title}><TextInput name="title" defaultValue={classRecord?.title} required /></Field>
       <Field label="Slug" hint="Lowercase with hyphens." required error={state.fieldErrors?.slug}><TextInput name="slug" defaultValue={classRecord?.slug} required /></Field>
       <Field label="Country" hint="This controls which categories are available." required><Select name="country" value={country} onChange={(event) => setCountry(event.target.value as "AU" | "NZ")}><option value="AU">Australia</option><option value="NZ">New Zealand</option></Select></Field>
@@ -120,7 +120,7 @@ export function AdminClassForm({ classRecord, categories, presenters: presenterO
       <Field label="Short description" required error={state.fieldErrors?.shortDescription} className="sm:col-span-2"><TextArea name="shortDescription" defaultValue={classRecord?.shortDescription} className="min-h-24" required /></Field>
       <Field label="Full description" hint="Plain text is rendered safely. Avoid copying large third-party source passages." required error={state.fieldErrors?.fullDescription} className="sm:col-span-2"><TextArea name="fullDescription" defaultValue={classRecord?.fullDescription} required className="min-h-40" /></Field>
     </div></section>
-    <section id="editor-1" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><p className="eyebrow text-[var(--fern)]">Schedule and delivery</p><div className="mt-5 grid gap-5 sm:grid-cols-2">
+    <section id="editor-1" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Schedule and delivery</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
       <Field label="Timezone" required><Select name="timezone" defaultValue={timezone}><option>Australia/Sydney</option><option>Australia/Melbourne</option><option>Australia/Brisbane</option><option>Australia/Adelaide</option><option>Australia/Perth</option><option>Pacific/Auckland</option></Select></Field>
       <Field label="Delivery format" required><Select name="deliveryFormat" defaultValue={classRecord?.deliveryFormat ?? "ONLINE"}><option value="ONLINE">Online</option><option value="IN_PERSON">In person</option><option value="HYBRID">Hybrid</option></Select></Field>
       <Field label="Start" hint="Entered in the selected class timezone." required error={state.fieldErrors?.startAt}><TextInput name="startAt" type="datetime-local" defaultValue={defaultDate(classRecord, "startAt", timezone)} required /></Field>
@@ -129,7 +129,7 @@ export function AdminClassForm({ classRecord, categories, presenters: presenterO
       <Field label="Venue address"><TextArea name="venueAddress" defaultValue={classRecord?.venueAddress ?? ""} className="min-h-24" /></Field>
       <Field label="Online attendance information" className="sm:col-span-2"><TextArea name="onlineAttendanceInfo" defaultValue={classRecord?.onlineAttendanceInfo ?? ""} className="min-h-24" /></Field>
     </div></section>
-    <section id="editor-2" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><p className="eyebrow text-[var(--fern)]">Capacity and CPD</p><div className="mt-5 grid gap-5 sm:grid-cols-2">
+    <section id="editor-2" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Capacity and CPD</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
       <Field label="Seat capacity" hint="Leave blank only when unlimited." error={state.fieldErrors?.seatCapacity}><TextInput name="seatCapacity" type="number" min={1} defaultValue={classRecord?.seatCapacity ?? ""} /></Field>
       <Field label="Capacity model" required><Select name="unlimitedCapacity" defaultValue={String(classRecord?.unlimitedCapacity ?? false)}><option value="false">Capacity controlled</option><option value="true">Unlimited capacity</option></Select></Field>
       <Field label="CPD unit type" required><Select name="cpdUnitType" defaultValue={classRecord?.cpdUnitType ?? "NONE"}><option value="NONE">None specified</option><option value="POINTS">Points</option><option value="HOURS">Hours</option><option value="CUSTOM">Custom</option></Select></Field>
@@ -137,14 +137,14 @@ export function AdminClassForm({ classRecord, categories, presenters: presenterO
       <Field label="Legislation category / activity type" hint="Use the activity type recorded by the provider."><TextInput name="cpdActivityCategory" defaultValue={currentActivity} maxLength={120} /></Field>
       <Field label="Professional identifier required" required><Select name="professionalIdentifierRequired" defaultValue={String(classRecord?.professionalIdentifierRequired ?? false)}><option value="false">No</option><option value="true">Yes</option></Select></Field>
     </div></section>
-    <section id="editor-3" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><p className="eyebrow text-[var(--fern)]">Pricing and booking window</p><div className="mt-5 grid gap-5 sm:grid-cols-2">
+    <section id="editor-3" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Pricing and booking window</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
       <Field label="Price" hint="Enter the full currency amount, for example 195.00. Currency is selected alongside." required><MoneyInput name="priceMinorUnits" defaultMinor={classRecord?.priceMinorUnits ?? 0} required /></Field>
       <Field label="Currency" required><Select name="currency" defaultValue={classRecord?.currency ?? "AUD"}><option value="AUD">AUD</option><option value="NZD">NZD</option></Select></Field>
       <Field label="Booking opens" required><TextInput name="bookingOpensAt" type="datetime-local" defaultValue={defaultDate(classRecord, "bookingOpensAt", timezone)} required /></Field>
       <Field label="Booking closes" required><TextInput name="bookingClosesAt" type="datetime-local" defaultValue={defaultDate(classRecord, "bookingClosesAt", timezone)} required /></Field>
       <Field label="Listing visibility" hint="Unlisted classes stay bookable through their direct link when published."><Select name="isUnlisted" defaultValue={String(classRecord?.isUnlisted ?? false)}><option value="false">Public — show in listings</option><option value="true">Unlisted — direct link only</option></Select></Field>
     </div></section>
-    <section id="editor-4" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><p className="eyebrow text-[var(--fern)]">Media and search</p><div className="mt-5 grid gap-5 sm:grid-cols-2">
+    <section id="editor-4" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Media and search</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
       <Field label="Media alt text"><TextInput name="mediaAltText" defaultValue={classRecord?.mediaAltText ?? ""} /></Field>
       <Field label="SEO title"><TextInput name="seoTitle" defaultValue={classRecord?.seoTitle ?? ""} /></Field>
       <Field label="SEO description" className="sm:col-span-2"><TextArea name="seoDescription" defaultValue={classRecord?.seoDescription ?? ""} /></Field>

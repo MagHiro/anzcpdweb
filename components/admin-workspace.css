@@ -1,15 +1,15 @@
-.workspace-admin { background: #f8faf7; }
-.workspace-admin .workspace-sidebar { background: #f0f4ee; }
+.workspace-admin { background: var(--paper); }
+.workspace-admin .workspace-sidebar { background: var(--mist); }
 .workspace-admin .workspace-brand { padding-bottom: 28px; }
 .workspace-admin .workspace-nav-group a { border-radius: 8px; min-height: 42px; transition: background-color .15s, color .15s; }
-.workspace-admin .workspace-nav-group a[aria-current] { background: var(--forest); color: white; box-shadow: 0 3px 9px #244c3b12; }
+.workspace-admin .workspace-nav-group a[aria-current] { background: #dbeee4; color: var(--forest); }
 .workspace-admin .workspace-active-dot { background: #c9e5a8; }
 .workspace-admin .workspace-content h1 { font-size: clamp(2rem, 3vw, 2.75rem); line-height: 1.12; letter-spacing: -.035em; }
 .workspace-admin .workspace-content > div > .eyebrow,
 .workspace-admin .workspace-content > div > div > div > .eyebrow { display: none; }
-.workspace-admin table thead { background: #f2f5ef; text-transform: none; letter-spacing: 0; }
+.workspace-admin table thead { background: var(--mist); text-transform: none; letter-spacing: 0; }
 .workspace-admin table th { font-weight: 600; color: var(--forest); }
-.workspace-admin table tbody tr:hover { background: #f5f8f2; }
+.workspace-admin table tbody tr:hover { background: var(--mist); }
 .workspace-admin table td { vertical-align: middle; }
 .workspace-admin input:focus, .workspace-admin textarea:focus, .workspace-admin select:focus { border-color: var(--forest); }
 .workspace-admin form > [role=alert], .workspace-admin form > [role=status] { scroll-margin-top: 100px; }
@@ -27,7 +27,7 @@
 @media (max-width: 900px) {
   .workspace-sidebar { position: relative; }
   .workspace-sidebar .workspace-brand { padding-bottom: 0; padding-right: 110px; }
-  .workspace-menu-toggle { display: block; position: absolute; right: 20px; top: 24px; font-size: 13px; color: var(--forest); }
+  .workspace-menu-toggle { display: block; position: absolute; right: 20px; top: 24px; font-size: 13px; background: var(--forest); color: white; }
   .workspace-sidebar nav { display: none; }
   .workspace-sidebar nav[data-open=true] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 22px; max-height: 65dvh; overflow-y: auto; gap: 16px; }
   .workspace-sidebar .workspace-nav-group > p { display: block; }

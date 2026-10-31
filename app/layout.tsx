@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Google_Sans, Google_Sans_Flex } from "next/font/google";
 import { AppChrome } from "@/components/app-chrome";
 import "./globals.css";
 
-const inter = Inter({
+const body = Google_Sans_Flex({
   subsets: ["latin"],
   display: "swap",
   fallback: ["Arial", "sans-serif"],
   adjustFontFallback: false,
 });
-const display = Space_Grotesk({ subsets: ["latin"], display: "swap", variable: "--font-display", weight: "400" });
+const display = Google_Sans({ subsets: ["latin"], display: "swap", variable: "--font-display", fallback: ["Arial", "sans-serif"], adjustFontFallback: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
@@ -20,5 +20,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en-AU" className={`${inter.className} ${display.variable}`} data-scroll-behavior="smooth"><body><AppChrome>{children}</AppChrome></body></html>;
+  return <html lang="en-AU" className={`${body.className} ${display.variable}`} data-scroll-behavior="smooth"><body><AppChrome>{children}</AppChrome></body></html>;
 }

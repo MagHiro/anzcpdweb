@@ -1,14 +1,14 @@
 import { test, expect } from "@playwright/test";
 
-test("editorial theme retains forest green and flat country panels", async ({ page }) => {
+test("quiet editorial theme uses near-white canvas and academy pathways", async ({ page }) => {
   await page.goto("/");
   const tokens = await page.evaluate(() => {
     const style = getComputedStyle(document.documentElement);
     return { brand: style.getPropertyValue("--color-brand").trim(), canvas: getComputedStyle(document.body).backgroundColor };
   });
-  expect(tokens).toEqual({ brand: "#244c3b", canvas: "rgb(255, 255, 255)" });
+  expect(tokens).toEqual({ brand: "#14382c", canvas: "rgb(250, 252, 251)" });
   await expect(page.locator(".hero-path")).toHaveCount(2);
-  await expect(page.locator(".hero-path").first()).toHaveCSS("border-radius", "22px");
+  await expect(page.locator(".hero-path").first()).toHaveCSS("border-radius", "24px");
   await expect(page.locator(".hero-path").first()).toHaveCSS("box-shadow", "none");
   await expect(page.getByRole("link", { name: "Explore New Zealand", exact: true })).toBeVisible();
 });
@@ -25,3 +25,23 @@ test("home pathways stack at narrow mobile widths", async ({ page }) => {
   expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test("catalogue filters sit above the results and remain collapsible", async ({ page }) => {
+  await page.goto("/classes");
+  const toolbar = page.locator(".catalogue-toolbar");
+  await expect(toolbar).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Search activities" })).toBeVisible();
+  await page.getByText("Search and filters", { exact: true }).click();
+  await expect(page.getByRole("searchbox", { name: "Search activities" })).toBeHidden();
+});
+
+for (const route of ["/", "/classes", "/australia", "/new-zealand", "/presenters", "/cpd-requirements", "/sign-in", "/register", "/forgot-password", "/reset-password", "/verify-email", "/privacy", "/terms", "/refund-policy", "/complaints", "/complaints/lodge", "/complaints/procedure", "/booking/success", "/booking/cancelled", "/booking/confirmation", "/account/setup"]) {
+  test(`${route} renders within mobile bounds`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    const response = await page.goto(route);
+    expect(response?.status()).toBeLessThan(400);
+    await expect(page.getByText(/Application error:|Internal Server Error|Invalid server environment/)).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}

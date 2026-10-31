@@ -7,7 +7,7 @@ import { VisitorPreferences } from "@/components/visitor-preferences";
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const workspace = pathname.startsWith("/admin") || (pathname.startsWith("/account") && pathname !== "/account/setup");
-  return <div className={workspace ? "application-workspace" : "academy-site"}>
+  return <div data-page={pathname} className={workspace ? "application-workspace" : "academy-site"}>
     <a href="#main-content" className="skip-link">Skip to content</a>
     {!workspace && <SiteHeader />}
     <main id="main-content" tabIndex={-1}>{children}</main>

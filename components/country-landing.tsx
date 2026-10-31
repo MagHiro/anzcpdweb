@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowUpRight } from "@/components/icon";
 import { ClassCard, Container, EmptyState, LinkButton, Section, type ActivityCardItem } from "@/components/ui";
 
@@ -8,13 +9,16 @@ type Props = { code: "AU" | "NZ"; label: string; headline: string; summary: stri
 export function CountryLanding({ code, label, headline, summary, themes, context, items, unavailable }: Props) {
   return <>
     <Section className="country-hero">
-      <Container>
+      <Container className="grid items-center gap-10 lg:grid-cols-2">
+        <div>
         <h1 className="max-w-5xl text-5xl leading-none sm:text-7xl">{headline}</h1>
         <p className="mt-8 max-w-2xl text-lg leading-7">{summary}</p>
         <div className="mt-9 flex flex-wrap items-center gap-6">
-          <LinkButton href={`/classes?country=${code}`} size="lg" className="!bg-white !text-[var(--forest)] hover:!bg-[var(--mist)]">Browse {label} activities <ArrowUpRight size={17} className="ml-3" /></LinkButton>
+          <LinkButton href={`/classes?country=${code}`} size="lg">Browse {label} activities <ArrowUpRight size={17} className="ml-3" /></LinkButton>
           <Link href={`/classes?country=${code}&time=past`} className="focus-ring py-3 text-sm underline underline-offset-4">Explore past classes</Link>
         </div>
+        </div>
+        <Image src={code === "AU" ? "/australia.jpg" : "/new-zealand.jpg"} alt={code === "AU" ? "Sydney harbour, Australia" : "New Zealand landscape"} width={1000} height={670} className="country-image" priority />
       </Container>
     </Section>
     <Section><Container className="grid gap-12 lg:grid-cols-[.75fr_1.25fr]">

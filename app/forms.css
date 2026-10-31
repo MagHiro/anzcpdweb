@@ -2,9 +2,9 @@
 @layer base {
   :root {
     --form-height: 3rem;
-    --form-radius: .5rem;
+    --form-radius: 1rem;
     --form-padding: .875rem;
-    --form-border: #a9b8ae;
+    --form-border: #e2ece6;
     --form-background: #fff;
     --form-readonly: #f3f6f2;
     --form-disabled: #eef1ed;

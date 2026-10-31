@@ -11,11 +11,11 @@ export type BadgeTone = "neutral" | "green" | "amber" | "red" | "blue";
 export type ButtonSize = "sm" | "md" | "lg";
 
 export function Container({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("mx-auto w-full max-w-[1380px] px-5 sm:px-8 lg:px-12", className)} {...props} />;
+  return <div className={cn("mx-auto w-full max-w-[1280px] px-5 md:px-8 xl:px-12", className)} {...props} />;
 }
 
 export function Section({ className, children, ...props }: ComponentProps<"section">) {
-  return <section className={cn("py-20 sm:py-28", className)} {...props}>{children}</section>;
+  return <section className={cn("py-10 sm:py-16", className)} {...props}>{children}</section>;
 }
 
 export function PageIntro({ eyebrow, title, description, children, className, tone = "dark" }: { eyebrow?: string; title: string; description?: string; children?: ReactNode; className?: string; tone?: "dark" | "light" }) {
@@ -27,16 +27,16 @@ export function PageHeader({ eyebrow, title, description, actions, className, he
   return <div className={cn("flex flex-wrap items-end justify-between gap-5", className)}><div className="min-w-0">{eyebrow ? <p className="eyebrow text-[var(--fern)]">{eyebrow}</p> : null}<Heading className="display mt-3 max-w-4xl text-4xl leading-[1.02] text-[var(--forest)] sm:text-5xl">{title}</Heading>{description ? <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">{description}</p> : null}</div>{actions ? <div className="shrink-0">{actions}</div> : null}</div>;
 }
 
-export function AuthFrame({ eyebrow, title, description, children, aside = "Find your bookings and attendance details in one secure place." }: { eyebrow: string; title: string; description: string; children: ReactNode; aside?: string }) {
-  return <Section className="bg-[var(--mist)]"><Container className="max-w-6xl"><div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-20"><div className="py-4 lg:py-10"><h1 className="display max-w-lg text-5xl sm:text-6xl">{title}</h1><p className="mt-6 max-w-md text-lg leading-7 text-[var(--muted)]">{description}</p><div className="mt-10 max-w-sm border-t border-[var(--line)] pt-6"><p className="text-sm leading-7 text-[var(--muted)]">{aside}</p><Link href="/classes" className="ink-link mt-5">Explore activities ↗</Link></div></div><div className="rounded-[22px] bg-white p-7 sm:p-10" aria-label={eyebrow}>{children}</div></div></Container></Section>;
+export function AuthFrame({ eyebrow, title, description, children }: { eyebrow: string; title: string; description: string; children: ReactNode; aside?: string }) {
+  return <Section className="auth-page"><Container><div className="auth-panel" aria-label={eyebrow}><header><h1 className="display">{title}</h1><p className="mt-4 text-[var(--muted)]">{description}</p></header><div className="mt-8">{children}</div></div><p className="mt-6 text-center text-sm"><Link href="/classes" className="ink-link">Back to the catalogue ↗</Link></p></Container></Section>;
 }
 
 export function Button({ className, variant = "primary", size = "md", ...props }: ComponentProps<"button"> & { variant?: ButtonVariant; size?: ButtonSize }) {
-  return <button className={cn("focus-ring inline-flex items-center justify-center rounded-full text-sm font-medium transition duration-200 disabled:cursor-not-allowed disabled:opacity-50", size === "sm" && "min-h-10 px-4 text-xs", size === "md" && "min-h-12 px-6", size === "lg" && "min-h-12 px-6", variant === "primary" && "bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)]", variant === "secondary" && "border border-[var(--color-brand)] bg-transparent text-[var(--color-brand)] hover:bg-[var(--color-inset)]", variant === "quiet" && "bg-transparent text-[var(--color-brand)] hover:bg-[var(--color-inset)]", variant === "danger" && "bg-[var(--color-danger)] text-white hover:bg-[#8d3e39]", className)} {...props} />;
+  return <button className={cn("focus-ring inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-50", size === "sm" && "min-h-10 px-4 text-xs", size === "md" && "min-h-12 px-6", size === "lg" && "min-h-12 px-6", variant === "primary" && "bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)]", variant === "secondary" && "border border-[var(--color-border)] bg-white text-[var(--color-brand)] hover:bg-[var(--color-inset)]", variant === "quiet" && "bg-transparent text-[var(--color-brand)] hover:bg-[var(--color-inset)]", variant === "danger" && "bg-[var(--color-danger)] text-white hover:bg-[#8d3e39]", className)} {...props} />;
 }
 
 export function LinkButton({ className, variant = "primary", size = "md", ...props }: ComponentProps<typeof Link> & { variant?: ButtonVariant; size?: ButtonSize }) {
-  return <Link className={cn("focus-ring inline-flex items-center justify-center rounded-full text-sm font-medium transition duration-200", size === "sm" && "min-h-10 px-4 text-xs", size === "md" && "min-h-12 px-6", size === "lg" && "min-h-12 px-6", variant === "primary" && "bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)]", variant === "secondary" && "border border-[var(--color-brand)] bg-transparent text-[var(--color-brand)] hover:bg-[var(--color-inset)]", variant === "quiet" && "bg-transparent text-[var(--color-brand)] hover:bg-[var(--color-inset)]", variant === "danger" && "bg-[var(--color-danger)] text-white hover:bg-[#8d3e39]", className)} {...props} />;
+  return <Link className={cn("focus-ring inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition duration-200", size === "sm" && "min-h-10 px-4 text-xs", size === "md" && "min-h-12 px-6", size === "lg" && "min-h-12 px-6", variant === "primary" && "bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)]", variant === "secondary" && "border border-[var(--color-border)] bg-white text-[var(--color-brand)] hover:bg-[var(--color-inset)]", variant === "quiet" && "bg-transparent text-[var(--color-brand)] hover:bg-[var(--color-inset)]", variant === "danger" && "bg-[var(--color-danger)] text-white hover:bg-[#8d3e39]", className)} {...props} />;
 }
 
 export function Badge({ children, tone = "neutral", className }: { children: ReactNode; tone?: BadgeTone; className?: string }) {
