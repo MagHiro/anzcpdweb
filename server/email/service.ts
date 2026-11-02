@@ -16,6 +16,7 @@ export type EmailMessage =
       name: string;
       receiptNumber: string;
       receiptId?: string;
+      noPaymentRequired?: boolean;
       classTitle: string;
       amount: string;
       url: string;

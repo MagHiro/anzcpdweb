@@ -18,7 +18,7 @@ export async function renderMessage(message: EmailMessage) {
       case "ACCOUNT_CLAIM": return { subject: "Connect your booking records | ANZ Migration Academy", element: <AccountClaim {...message} /> };
       case "BOOKING_CONFIRMATION": return { subject: `Booking confirmed: ${message.classTitle}`, element: <BookingConfirmation {...message} /> };
       case "BOOKING_CANCELLED": return { subject: `Booking cancelled: ${message.classTitle}`, element: <BookingCancelled {...message} /> };
-      case "PAYMENT_RECEIPT": return { subject: `Payment receipt: ${message.amount}`, element: <PaymentReceipt {...message} /> };
+      case "PAYMENT_RECEIPT": return { subject: `${message.noPaymentRequired ? "Booking receipt" : "Payment receipt"}: ${message.amount}`, element: <PaymentReceipt {...message} /> };
       case "REFUND_STATUS": return { subject: `Refund update: ${message.bookingReference}`, element: <RefundStatus {...message} /> };
     }
   })();

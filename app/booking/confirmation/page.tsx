@@ -15,35 +15,38 @@ export default async function GuestBookingConfirmationPage({ searchParams }: { s
   if (!row) notFound();
   const entitled = ["CONFIRMED", "PARTIALLY_REFUNDED"].includes(row.booking.status);
   const cpd = getCpdLabel(row.booking.cpdUnitTypeSnapshot, row.booking.cpdAmountSnapshot);
-  return <Section className="bg-[var(--paper)]"><Container className="max-w-4xl">
-    <div className="flex flex-wrap items-start justify-between gap-5">
-      <div><p className="eyebrow text-[var(--fern)]">Guest booking record · {makePublicBookingReference(row.booking.id)}</p><h1 className="display mt-5 max-w-2xl text-5xl leading-[.96] text-[var(--forest)]">{row.booking.classTitleSnapshot}</h1><p className="mt-4 text-sm leading-6 text-[var(--muted)]">This private link is time-limited. Create an account from the booking email if you want an ongoing dashboard.</p></div>
-      <StatusBadge status={row.booking.status} />
+  const free = row.booking.amountSnapshot === 0;
+  return <Section className="confirmation-page"><Container>
+    <div className="confirmation-header">
+      <div><h1 className="display">{row.booking.status === "CONFIRMED" ? "Your place is confirmed" : "Your booking"}</h1><p>Booking reference <strong>{makePublicBookingReference(row.booking.id)}</strong></p></div>
+      {row.booking.status === "CONFIRMED" ? <StatusBadge status={row.booking.status} /> : null}
     </div>
-    <BookingStatus status={row.booking.status} />
-    <div className="mt-10 grid gap-4 md:grid-cols-2">
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-none">
-        <p className="eyebrow text-[var(--fern)]">Class details</p>
+    {row.booking.status !== "CONFIRMED" && <BookingStatus status={row.booking.status} />}
+    <div className="confirmation-grid">
+      <section className="confirmation-activity" aria-labelledby="activity-title">
+        <h2 id="activity-title">{row.booking.classTitleSnapshot}</h2>
         <dl className="mt-5 grid gap-4 text-sm">
           <div><dt className="text-[var(--muted)]">When</dt><dd className="mt-1 font-semibold">{formatDateTime(row.startAt, row.booking.timezoneSnapshot)} – {formatDateTime(row.endAt, row.booking.timezoneSnapshot)}<span className="block text-xs font-normal text-[var(--muted)]">{row.booking.timezoneSnapshot}</span></dd></div>
-          <div><dt className="text-[var(--muted)]">Format</dt><dd className="mt-1 font-semibold">{row.deliveryFormat.replaceAll("_", " ")}</dd></div>
+          <div><dt className="text-[var(--muted)]">Format</dt><dd className="mt-1 font-semibold">{row.deliveryFormat === "ONLINE" ? "Online" : row.deliveryFormat.replaceAll("_", " ")}</dd></div>
           <div><dt className="text-[var(--muted)]">CPD</dt><dd className="mt-1 font-semibold">{cpd ?? "Not specified"}</dd></div>
-          <div><dt className="text-[var(--muted)]">Location</dt><dd className="mt-1 font-semibold">{row.deliveryFormat === "ONLINE" ? entitled && row.onlineAttendanceInfo ? row.onlineAttendanceInfo : "Attendance details are provided after confirmed payment." : row.venueName ?? "See class details"}</dd></div>
+          <div className="confirmation-attendance"><dt className="text-[var(--muted)]">{row.deliveryFormat === "ONLINE" ? "Attendance details" : "Location"}</dt><dd className="mt-1 font-semibold">{row.deliveryFormat === "ONLINE" ? entitled && row.onlineAttendanceInfo ? row.onlineAttendanceInfo : "Attendance details will be provided once your booking is confirmed." : row.venueName ?? "See class details"}</dd></div>
         </dl>
-      </div>
-      <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-none">
-        <p className="eyebrow text-[var(--fern)]">Booking and payment</p>
+        <div className="mt-8"><LinkButton href={`/classes/${row.classSlug}`} variant="secondary">View activity details</LinkButton></div>
+      </section>
+      <section className="confirmation-record" aria-labelledby="booking-details-title">
+        <h2 id="booking-details-title">Booking details</h2>
         <dl className="mt-5 grid gap-4 text-sm">
           <div><dt className="text-[var(--muted)]">Attendee</dt><dd className="mt-1 font-semibold">{row.booking.fullName}</dd></div>
           <div><dt className="text-[var(--muted)]">Email</dt><dd className="mt-1 break-all font-semibold">{row.booking.email}</dd></div>
-          <div><dt className="text-[var(--muted)]">Amount</dt><dd className="mt-1 font-semibold">{formatMoney(row.booking.amountSnapshot, row.booking.currencySnapshot)}</dd></div>
-          <div><dt className="text-[var(--muted)]">Payment</dt><dd className="mt-1"><StatusBadge status={row.payment.status} /></dd></div>
+          <div><dt className="text-[var(--muted)]">{free ? "Price" : "Amount"}</dt><dd className="mt-1 font-semibold">{free ? "Free · No payment required" : formatMoney(row.booking.amountSnapshot, row.booking.currencySnapshot)}</dd></div>
+          {!free && <div><dt className="text-[var(--muted)]">Payment</dt><dd className="mt-1"><StatusBadge status={row.payment.status} /></dd></div>}
         </dl>
-      </div>
+        {(row.booking.paidAt || (free && row.booking.confirmedAt)) && <div className="mt-6"><ReceiptAccess bookingId={row.booking.id} token={params.token} /></div>}
+      </section>
     </div>
-    <div className="mt-8 flex flex-wrap gap-3">
-      {row.booking.paidAt && <ReceiptAccess bookingId={row.booking.id} token={params.token} />}
-      <LinkButton href={`/classes/${row.classSlug}`} variant="secondary">View class details</LinkButton><LinkButton href="/register">Create an account</LinkButton>
+    <div className="confirmation-access">
+      <p>This private link is time-limited. Create an account from your booking email to keep access to your bookings.</p>
+      <LinkButton href="/register" variant="secondary">Create an account</LinkButton>
     </div>
   </Container></Section>;
 }

@@ -242,6 +242,7 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
 }
 
 async function completeFreeBooking(booking: typeof bookings.$inferSelect, reused: boolean) {
+  await enqueuePaymentReceipt(booking.id);
   await enqueueBookingFulfilmentEmails(booking);
   const token = booking.userId ? undefined : await createAccountToken({ email: booking.email, purpose: "GUEST_BOOKING_ACCESS", bookingId: booking.id, expiresInMs: 30 * 24 * 60 * 60 * 1000 });
   return { booking, reused, checkoutUrl: token ? `/booking/confirmation?token=${encodeURIComponent(token)}` : `/account/bookings/${booking.id}` };

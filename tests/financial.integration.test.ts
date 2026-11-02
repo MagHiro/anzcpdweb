@@ -57,11 +57,17 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     const [payment] = await db.select().from(payments).where(eq(payments.bookingId, result.booking.id));
     expect(payment.status).toBe("SUCCEEDED");
     expect(payment.amountCaptured).toBe(0);
-    expect(await issuePaymentReceipt(result.booking.id)).toBeNull();
+    const receipt = await issuePaymentReceipt(result.booking.id);
+    expect(receipt?.amountPaid).toBe(0);
+    expect((await issuePaymentReceipt(result.booking.id))?.id).toBe(receipt?.id);
     // Confirmation and account setup are queued through the regular fulfilment flow.
     const confirmations = await db.select().from(emailOutbox).where(eq(emailOutbox.recipientEmail, input.email));
     expect(confirmations.filter(message => message.messageType === "BOOKING_CONFIRMATION")).toHaveLength(1);
     expect(confirmations.filter(message => message.messageType === "ACCOUNT_SETUP")).toHaveLength(1);
+    const receiptMessages = confirmations.filter(message => message.messageType === "PAYMENT_RECEIPT");
+    expect(receiptMessages).toHaveLength(1);
+    expect((receiptMessages[0].payload as { noPaymentRequired: boolean }).noPaymentRequired).toBe(true);
+    expect(await receiptEmailAttachments(receiptMessages[0].payload as EmailMessage)).toHaveLength(1);
     await expect(createBookingCheckout({ ...input, idempotencyKey: randomUUID() })).rejects.toThrow(/sold out/);
     await expect(createBookingCheckout({ ...input, email: "other@example.com" })).rejects.toThrow(/different attendee/);
   });

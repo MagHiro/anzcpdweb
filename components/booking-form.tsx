@@ -21,7 +21,7 @@ export function BookingForm({ classRecord, siteKey }: { classRecord: BookingClas
   useEffect(() => { if (state.ok && state.checkoutUrl) window.location.assign(state.checkoutUrl); }, [state]);
   const cpd = getCpdLabel(classRecord.cpdUnitType, classRecord.cpdUnitAmount);
   const free = classRecord.priceMinorUnits === 0;
-  return <form action={formAction} className="space-y-6" onChange={() => setReview(null)} onSubmit={event => {
+  return <form action={formAction} className="booking-form" onChange={() => setReview(null)} onSubmit={event => {
     if (review) return;
     event.preventDefault();
     const form = event.currentTarget;
@@ -35,27 +35,31 @@ export function BookingForm({ classRecord, siteKey }: { classRecord: BookingClas
     <input type="hidden" name="classSlug" value={classRecord.slug} />
     <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
     <input type="hidden" name="turnstileToken" value={turnstileToken} />
-    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-none sm:p-6">
+    <aside className="booking-summary">
       <div className="flex flex-wrap items-center justify-between gap-3"><CountryBadge country={classRecord.country} /><span className="text-sm font-bold text-[var(--forest)]">{free ? "Free" : formatMoney(classRecord.priceMinorUnits, classRecord.currency)}</span></div>
       <h2 className="display mt-5 text-3xl leading-tight text-[var(--forest)] sm:text-4xl">{classRecord.title}</h2>
       <p className="mt-3 text-sm leading-6 text-[var(--muted)]"><VisitorTime startAt={new Date(classRecord.startAt).toISOString()} timezone={classRecord.timezone} allowConversion={classRecord.deliveryFormat === "ONLINE"} showSelector />{cpd ? <span className="mt-2 block">{cpd}</span> : null}</p>
-    </div>
+      <div className="booking-summary-total"><span>Total</span><strong>{free ? "Free" : formatMoney(classRecord.priceMinorUnits, classRecord.currency)}</strong></div>
+      <p className="booking-summary-note">{free ? "No payment required. Your place is confirmed when you complete this form." : "Your place is held briefly during Stripe Checkout. Do not start another payment while checkout is processing."}</p>
+      <Link href={`/classes/${classRecord.slug}`} className="booking-summary-link">View activity details ↗</Link>
+    </aside>
+    <div className="booking-form-main">
     <FormNotice>{reviewError || state.error}</FormNotice>
-    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 sm:p-6">
-      <div className="mb-6 flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--forest)] text-xs font-black text-white">1</span><div><p className="text-sm font-bold text-[var(--forest)]">Attendee details</p><p className="text-xs text-[var(--muted)]">Tell us who is attending this activity.</p></div></div>
+    <section className="booking-form-section" aria-labelledby="attendee-heading">
+      <h2 id="attendee-heading">Attendee details</h2>
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Full name" required error={state.fieldErrors?.fullName}><TextInput name="fullName" autoComplete="name" required placeholder="Your full name" /></Field>
         <Field label="Email address" required error={state.fieldErrors?.email}><TextInput name="email" type="email" autoComplete="email" required placeholder="you@example.com" /></Field>
         <Field label="Confirm email address" required error={state.fieldErrors?.emailConfirmation}><TextInput name="emailConfirmation" type="email" autoComplete="email" required placeholder="Repeat your email" /></Field>
         <Field label={getIdentifierLabel(classRecord.country)} hint={classRecord.professionalIdentifierRequired ? "Required for this class. The academy does not verify registration status." : "Optional unless the class requires it."} required={classRecord.professionalIdentifierRequired} error={state.fieldErrors?.professionalIdentifier}><TextInput name="professionalIdentifier" inputMode={classRecord.country === "AU" ? "numeric" : "text"} placeholder={classRecord.country === "AU" ? "123456" : "IAA-12345"} required={classRecord.professionalIdentifierRequired} /></Field>
       </div>
-    </div>
-    <div className="space-y-4 rounded-xl border border-[var(--line)] bg-[var(--mist)] p-5">
-      <div className="mb-2 flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--signal)] text-xs font-black text-white">2</span><div><p className="text-sm font-bold text-[var(--forest)]">Confirmation</p><p className="text-xs text-[var(--muted)]">{free ? "Review the terms before confirming your booking." : "Review the terms before secure payment."}</p></div></div>
+    </section>
+    <section className="booking-form-section booking-agreements" aria-labelledby="confirmation-heading">
+      <h2 id="confirmation-heading">Confirmation</h2>
       <label className="flex gap-3 text-sm leading-6 text-[var(--ink)]"><input className="mt-1 h-4 w-4 accent-[var(--forest)]" type="checkbox" name="createAccountRequested" /><span><strong>Create an account for me so I can manage this booking and future CPD registrations.</strong><br /><span className="text-[var(--muted)]">After {free ? "confirmation" : "payment"}, we’ll email a secure account setup link. We never send or generate a predictable password.</span></span></label>
       <label className="flex gap-3 text-sm leading-6 text-[var(--ink)]"><input className="mt-1 h-4 w-4 accent-[var(--forest)]" type="checkbox" name="termsAccepted" required /><span>I agree to the <Link href="/terms" target="_blank" className="font-bold underline decoration-[var(--signal)] underline-offset-4">terms</Link>.</span></label>
       <label className="flex gap-3 text-sm leading-6 text-[var(--ink)]"><input className="mt-1 h-4 w-4 accent-[var(--forest)]" type="checkbox" name="refundPolicyAccepted" required /><span>I acknowledge the <Link href="/refund-policy" target="_blank" className="font-bold underline decoration-[var(--signal)] underline-offset-4">refund and cancellation policy</Link>.</span></label>
-    </div>
+    </section>
     <div><Turnstile siteKey={siteKey} onToken={setTurnstileToken} /><p className="mt-2 text-xs text-[var(--muted)]">{free ? "Your details are used to create this booking. No payment is required." : "Your details are used to create this booking and its payment record. We do not store card details."}</p></div>
     {review && <section aria-label="Review your booking" role="status" className="rounded-xl border-2 border-[var(--forest)] bg-white p-6">
       <h2 className="text-xl font-semibold">Review your booking</h2>
@@ -64,5 +68,6 @@ export function BookingForm({ classRecord, siteKey }: { classRecord: BookingClas
     </section>}
     <button type="submit" disabled={pending} className="focus-ring flex min-h-12 w-full items-center justify-center rounded-lg bg-[var(--forest)] px-5 text-sm font-bold text-white transition hover:bg-[var(--fern)] disabled:opacity-60">{pending ? "Reserving your place…" : !review ? "Review booking" : free ? "Confirm booking" : `Continue to secure payment · ${formatMoney(classRecord.priceMinorUnits, classRecord.currency)}`}</button>
     {!free && <p className="text-center text-xs leading-5 text-[var(--muted)]">Stripe Checkout handles payment. Returning to this page is not proof of payment; your booking is confirmed after provider verification.</p>}
+    </div>
   </form>;
 }

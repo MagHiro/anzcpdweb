@@ -26,18 +26,11 @@ export default async function BookClassPage({ params }: { params: Promise<{ slug
     currency: record.currency,
     professionalIdentifierRequired: record.professionalIdentifierRequired,
   };
-  const free = record.priceMinorUnits === 0;
-  return <Section className="bg-[var(--paper)]"><Container className="max-w-[1180px]">
-    <PageIntro title="Reserve your place." description={free ? "You can continue as a guest. No payment is required for this class." : "You can continue as a guest. A place is held for a short time while Stripe Checkout processes payment."} />
-    <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_300px] lg:items-start">
+  return <Section className="booking-page"><Container>
+    <LinkButton href={`/classes/${record.slug}`} variant="quiet">← Back to activity</LinkButton>
+    <PageIntro title="Complete your booking" description="Enter your attendee details, then review and confirm." />
+    <div className="booking-page-content">
       <BookingForm classRecord={bookingClass} siteKey={getServerEnv().NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
-      <aside className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-none lg:sticky lg:top-28">
-        <div className="grid gap-5 text-sm">
-          <div><p className="font-bold text-[var(--forest)]">Guest booking is available</p><p className="mt-1 leading-6 text-[var(--muted)]">You can create an account after {free ? "confirmation" : "payment"} if you want an ongoing record.</p></div>
-          {!free && <><div className="border-t border-[var(--line)] pt-5"><p className="font-bold text-[var(--forest)]">Stripe handles payment</p><p className="mt-1 leading-6 text-[var(--muted)]">Card details do not pass through or stay in this application.</p></div><div className="border-t border-[var(--line)] pt-5"><p className="font-bold text-[var(--forest)]">Your place is reserved briefly</p><p className="mt-1 leading-6 text-[var(--muted)]">Do not start another payment if the first checkout is still processing.</p></div></>}
-        </div>
-        <LinkButton href={`/classes/${record.slug}`} variant="quiet" className="mt-7 w-full">Review class details</LinkButton>
-      </aside>
     </div>
   </Container></Section>;
 }

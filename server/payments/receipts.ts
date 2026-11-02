@@ -19,11 +19,13 @@ export async function issuePaymentReceipt(bookingId: string) {
   const db = getDb();
   const [row] = await db.select({ booking: bookings, payment: payments }).from(bookings)
     .innerJoin(payments, eq(payments.bookingId, bookings.id)).where(eq(bookings.id, bookingId)).limit(1);
-  if (!row || !canIssueReceipt(row.payment, row.booking.paidAt)) return null;
+  if (!row) return null;
+  const freeConfirmed = row.booking.amountSnapshot === 0 && row.payment.amountTotal === 0 && row.payment.status === "SUCCEEDED" && row.booking.confirmedAt !== null;
+  if (!freeConfirmed && !canIssueReceipt(row.payment, row.booking.paidAt)) return null;
   await db.insert(paymentReceipts).values({
     paymentId: row.payment.id, bookingId, recipientName: row.booking.fullName,
     recipientEmail: row.booking.email, classTitle: row.booking.classTitleSnapshot,
-    amountPaid: row.payment.amountCaptured, currency: row.payment.currency, paidAt: row.booking.paidAt!,
+    amountPaid: row.payment.amountCaptured, currency: row.payment.currency, paidAt: row.booking.paidAt ?? row.booking.confirmedAt!,
   }).onConflictDoNothing({ target: paymentReceipts.paymentId });
   const [receipt] = await db.select().from(paymentReceipts).where(eq(paymentReceipts.paymentId, row.payment.id)).limit(1);
   return receipt ?? null;
@@ -39,6 +41,7 @@ export async function enqueuePaymentReceipt(bookingId: string) {
   await queueEmail({ type: "PAYMENT_RECEIPT", email: receipt.recipientEmail, name: receipt.recipientName,
     receiptNumber: receiptNumber(receipt.id), receiptId: receipt.id, classTitle: receipt.classTitle,
     amount: formatMoney(receipt.amountPaid, receipt.currency),
+    noPaymentRequired: receipt.amountPaid === 0,
     url: `${getServerEnv().APP_URL}/booking/receipt/${bookingId}?token=${encodeURIComponent(token)}`,
   }, dedupeKey);
 }

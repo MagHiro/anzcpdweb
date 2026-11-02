@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { paymentReceipts } from "@/db/schema";
-import { getDb } from "@/lib/db";
+import { issuePaymentReceipt } from "@/server/payments/receipts";
 import { uuidSchema } from "@/lib/validation";
 import { getServerSession } from "@/server/auth/session";
 import { getCustomerBookingById } from "@/server/catalogue/queries";
@@ -25,7 +23,7 @@ export default async function ReceiptPage({ params, searchParams }: {
   const session = await getServerSession();
   const row = token ? await getGuestBookingByToken(token) : session ? await getCustomerBookingById(session.user.id, id) : null;
   if (!row || row.booking.id !== id) notFound();
-  const [receipt] = await getDb().select().from(paymentReceipts).where(eq(paymentReceipts.bookingId, id)).limit(1);
+  const receipt = await issuePaymentReceipt(id);
   if (!receipt) notFound();
   const refunded = row.payment?.amountRefunded ?? 0;
   return <div className="receipt-workspace min-h-screen bg-[#f1f3ee] px-4 py-8 sm:px-8 sm:py-12">
