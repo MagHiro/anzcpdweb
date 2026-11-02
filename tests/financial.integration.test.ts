@@ -7,7 +7,7 @@ import { accountClaimTokens, bookings, categories, classes, countries, emailOutb
 import { issuePaymentReceipt } from "@/server/payments/receipts";
 import { receiptEmailAttachments, type EmailMessage } from "@/server/email/service";
 import { completeAccountLink, createAccountToken } from "@/server/auth/tokens";
-import { markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
+import { createBookingCheckout, markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
 import { cancelClass, deleteSourceReference, publishClass, replaceClassSources, saveSourceReference } from "@/server/catalogue/service";
 import { syncPaymentRefundTotals, syncRefundFromStripe } from "@/server/payments/refunds";
 
@@ -37,6 +37,34 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     const session = { id: checkoutId, metadata: { bookingId: booking.id }, amount_total: 10000, currency: "aud", payment_intent: intentId } as unknown as Stripe.Checkout.Session;
     return { record, booking, payment, session };
   }
+
+  it("confirms free bookings without Stripe, deduplicates retries, and enforces capacity", async () => {
+    const { record, booking: unused } = await fixture("CANCELLED");
+    await db.update(classes).set({ priceMinorUnits: 0 }).where(eq(classes.id, record.id));
+    const input = { classSlug: record.slug, fullName: "Free attendee", email: `free-${randomUUID()}@example.com`, createAccountRequested: true, termsAcceptedAt: new Date(), refundPolicyAcceptedAt: new Date(), idempotencyKey: randomUUID() };
+    tokenEmails.push(input.email);
+    const result = await createBookingCheckout(input);
+    bookingIds.push(result.booking.id);
+    expect(result.booking.id).not.toBe(unused.id);
+    expect(result.booking.status).toBe("CONFIRMED");
+    expect(result.booking.confirmedAt).not.toBeNull();
+    expect(result.booking.paidAt).toBeNull();
+    expect(result.booking.stripeCheckoutSessionId).toBeNull();
+    expect(result.booking.seatReservationExpiresAt).toBeNull();
+    expect(result.checkoutUrl).toMatch(/^\/booking\/confirmation\?token=/);
+    const again = await createBookingCheckout(input);
+    expect(again.booking.id).toBe(result.booking.id);
+    const [payment] = await db.select().from(payments).where(eq(payments.bookingId, result.booking.id));
+    expect(payment.status).toBe("SUCCEEDED");
+    expect(payment.amountCaptured).toBe(0);
+    expect(await issuePaymentReceipt(result.booking.id)).toBeNull();
+    // Confirmation and account setup are queued through the regular fulfilment flow.
+    const confirmations = await db.select().from(emailOutbox).where(eq(emailOutbox.recipientEmail, input.email));
+    expect(confirmations.filter(message => message.messageType === "BOOKING_CONFIRMATION")).toHaveLength(1);
+    expect(confirmations.filter(message => message.messageType === "ACCOUNT_SETUP")).toHaveLength(1);
+    await expect(createBookingCheckout({ ...input, idempotencyKey: randomUUID() })).rejects.toThrow(/sold out/);
+    await expect(createBookingCheckout({ ...input, email: "other@example.com" })).rejects.toThrow(/different attendee/);
+  });
 
   it("issues one immutable receipt and one email only after successful payment", async () => {
     const { booking, session } = await fixture("PENDING_PAYMENT");

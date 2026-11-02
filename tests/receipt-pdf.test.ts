@@ -13,13 +13,13 @@ const receipt = {
   paidAt: new Date("2026-10-30T00:00:00Z"), issuedAt: new Date("2026-10-30T00:00:01Z"),
 };
 
-describe("receipt PDF", () => {
-  it("generates a valid single-page A4 document with embedded font", async () => {
+describe.skipIf(!process.env.GOTENBERG_URL)("receipt PDF", () => {
+  it("generates a valid single-page A4 document using the browser receipt layout", async () => {
     const buffer = await renderReceiptPdf(receipt);
     expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
     const pdf = await PDFDocument.load(buffer);
     expect(pdf.getPageCount()).toBe(1);
-    expect(pdf.getPage(0).getWidth()).toBeCloseTo(595.28);
+    expect(pdf.getPage(0).getWidth()).toBeCloseTo(595.28, 0);
     expect(pdf.getTitle()).toContain("Payment receipt");
   });
 

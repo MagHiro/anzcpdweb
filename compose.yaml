@@ -1,4 +1,13 @@
 services:
+  gotenberg:
+    image: gotenberg/gotenberg:8@sha256:13672f317b443c793e972b1bd2155ec62a3e7b6891b411e8196442cc053ee5f5
+    restart: unless-stopped
+    command: ["gotenberg", "--chromium-deny-private-ips=true", "--chromium-deny-public-ips=true", "--chromium-disable-javascript=true", "--api-disable-download-from=true", "--webhook-disable=true"]
+    # Internal only: never expose the conversion API on the host.
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 256mb
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -41,7 +50,10 @@ services:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: "3000"
+      GOTENBERG_URL: http://gotenberg:3000
     depends_on:
+      gotenberg:
+        condition: service_started
       db:
         condition: service_healthy
       migrate:
@@ -69,7 +81,10 @@ services:
       - ./deploy/production.env
     environment:
       NODE_ENV: production
+      GOTENBERG_URL: http://gotenberg:3000
     depends_on:
+      gotenberg:
+        condition: service_started
       db:
         condition: service_healthy
       migrate:

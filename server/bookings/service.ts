@@ -60,8 +60,13 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
   const createAccountRequested = !input.userId && input.createAccountRequested;
   const existing = await db.select().from(bookings).where(eq(bookings.idempotencyKey, input.idempotencyKey)).limit(1);
   if (existing[0] && (existing[0].email !== input.email.toLowerCase() || existing[0].userId !== (input.userId ?? null))) throw new Error("This booking request belongs to a different attendee or account.");
+  if (existing[0]?.status === "CONFIRMED" && existing[0].amountSnapshot === 0) {
+    const [activity] = await db.select({ slug: classes.slug }).from(classes).where(eq(classes.id, existing[0].classId)).limit(1);
+    if (activity?.slug !== input.classSlug) throw new Error("This booking request belongs to a different class.");
+    return completeFreeBooking(existing[0], true);
+  }
   if (existing[0] && ["CONFIRMED", "PARTIALLY_REFUNDED", "REFUNDED", "CANCELLED", "PAYMENT_PROCESSING"].includes(existing[0].status)) throw new Error("This booking is already being processed or is closed. Check your account before trying to pay again.");
-  if (existing[0]?.stripeCheckoutSessionId) {
+  if (existing[0]?.stripeCheckoutSessionId && existing[0].amountSnapshot > 0) {
     const [activity] = await db.select().from(classes).where(eq(classes.id, existing[0].classId)).limit(1);
     if (!activity || activity.slug !== input.classSlug || !["PUBLISHED", "SOLD_OUT"].includes(activity.status)) throw new Error("This class is no longer available for booking.");
     const session = await getStripe().checkout.sessions.retrieve(existing[0].stripeCheckoutSessionId);
@@ -122,14 +127,15 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
         professionalIdentifierType: classRecord.professionalIdentifierRequired ? country.identifierType : identifier ? country.identifierType : null,
         professionalIdentifier: identifier,
         createAccountRequested,
-        status: "PENDING_PAYMENT",
+        status: classRecord.priceMinorUnits === 0 ? "CONFIRMED" : "PENDING_PAYMENT",
         amountSnapshot: classRecord.priceMinorUnits,
         currencySnapshot: classRecord.currency,
         classTitleSnapshot: classRecord.title,
         cpdUnitTypeSnapshot: classRecord.cpdUnitType,
         cpdAmountSnapshot: classRecord.cpdUnitAmount,
         timezoneSnapshot: classRecord.timezone,
-        seatReservationExpiresAt: reservationExpiresAt,
+        seatReservationExpiresAt: classRecord.priceMinorUnits === 0 ? null : reservationExpiresAt,
+        confirmedAt: classRecord.priceMinorUnits === 0 ? now : null,
         termsAcceptedAt: input.termsAcceptedAt,
         refundPolicyAcceptedAt: input.refundPolicyAcceptedAt,
         idempotencyKey: input.idempotencyKey,
@@ -140,11 +146,31 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
       bookingId: booking.id,
       amountTotal: booking.amountSnapshot,
       currency: booking.currencySnapshot,
-      status: "PENDING",
+      status: booking.amountSnapshot === 0 ? "SUCCEEDED" : "PENDING",
     });
     await refreshCapacityStatus(tx, classRecord.id, now);
     return booking;
   });
+
+  if (created.amountSnapshot === 0) {
+    // Legacy pending $0 bookings are completed under the same class/booking locks.
+    const confirmed = await db.transaction(async (tx) => {
+      await lockBookingClass(tx, created.id);
+      const [booking] = await tx.select().from(bookings).where(eq(bookings.id, created.id)).for("update").limit(1);
+      if (!booking) throw new Error("Booking was not found.");
+      if (booking.status === "CONFIRMED") return booking;
+      if (booking.status !== "PENDING_PAYMENT") throw new Error("This booking cannot be confirmed.");
+      const [activity] = await tx.select().from(classes).where(eq(classes.id, booking.classId)).limit(1);
+      const now = new Date();
+      if (!activity || !["PUBLISHED", "SOLD_OUT"].includes(activity.status) || now > activity.bookingClosesAt || now >= activity.startAt) throw new Error("Booking is closed for this class.");
+      assertBookingTransition(booking.status, "CONFIRMED");
+      const [updated] = await tx.update(bookings).set({ status: "CONFIRMED", confirmedAt: now, seatReservationExpiresAt: null, updatedAt: now }).where(eq(bookings.id, booking.id)).returning();
+      await tx.update(payments).set({ status: "SUCCEEDED", updatedAt: now }).where(eq(payments.bookingId, booking.id));
+      await refreshCapacityStatus(tx, booking.classId, now);
+      return updated;
+    });
+    return completeFreeBooking(confirmed, false);
+  }
 
   if (created.stripeCheckoutSessionId) {
     const existingSession = await getStripe().checkout.sessions.retrieve(created.stripeCheckoutSessionId);
@@ -213,6 +239,12 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
     if (!definitelyRejected) throw new Error("We couldn't confirm the payment session state. No completed payment has been confirmed by our server. Retry this same booking once, or contact support before starting another booking.");
     throw new Error("We couldn't start the payment session. No payment was confirmed. Please try again.");
   }
+}
+
+async function completeFreeBooking(booking: typeof bookings.$inferSelect, reused: boolean) {
+  await enqueueBookingFulfilmentEmails(booking);
+  const token = booking.userId ? undefined : await createAccountToken({ email: booking.email, purpose: "GUEST_BOOKING_ACCESS", bookingId: booking.id, expiresInMs: 30 * 24 * 60 * 60 * 1000 });
+  return { booking, reused, checkoutUrl: token ? `/booking/confirmation?token=${encodeURIComponent(token)}` : `/account/bookings/${booking.id}` };
 }
 
 export async function markCheckoutCompleted(input: { session: import("stripe").default.Checkout.Session; paymentSucceeded: boolean }) {
