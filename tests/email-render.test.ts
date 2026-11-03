@@ -43,6 +43,10 @@ describe("React Email templates", () => {
     expect(result.text).toContain(url);
     if ("bookingReference" in message) expect(result.text).toContain(message.bookingReference);
     if ("amount" in message) expect(result.text).toContain(message.amount);
-    if (message.type === "PAYMENT_RECEIPT") expect(result.text).toContain("not attendance confirmation");
+    if (message.type === "PAYMENT_RECEIPT") {
+      expect(result.text).toContain("does not confirm attendance");
+      expect(result.text).toContain("The PDF receipt is attached.");
+      expect(result.text).toContain("expires in 30 days");
+    }
   });
 });

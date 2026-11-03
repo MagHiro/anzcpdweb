@@ -24,7 +24,7 @@ test("private receipt is readable on mobile and prints without site chrome", asy
     await page.goto(`/booking/receipt/${booking.id}?token=${encodeURIComponent(token)}`);
     await expect(page.getByRole("heading", { name: "Payment receipt" })).toBeVisible();
     await expect(page.getByText("Alex Morgan", { exact: true })).toBeVisible();
-    await expect(page.getByText("Refunded to date", { exact: true })).toBeVisible();
+    await expect(page.getByText("Total refunded", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Print / save PDF" })).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

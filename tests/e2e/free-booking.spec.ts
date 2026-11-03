@@ -40,7 +40,7 @@ test("zero-cost booking completes without a Stripe redirect", async ({ page }) =
     expect(booking.stripeCheckoutSessionId).toBeNull();
     await page.getByRole("link", { name: "View receipt", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Booking receipt" })).toBeVisible();
-    await expect(page.getByText("Free booking · No payment required", { exact: true })).toBeVisible();
+    await expect(page.getByText("No payment required", { exact: true })).toBeVisible();
   } finally {
     const rows = await db.select().from(bookings).where(eq(bookings.email, email));
     await db.delete(accountClaimTokens).where(eq(accountClaimTokens.email, email));
