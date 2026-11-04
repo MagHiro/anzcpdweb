@@ -215,6 +215,7 @@ export const classes = pgTable(
     venueName: text("venue_name"),
     venueAddress: text("venue_address"),
     onlineAttendanceInfo: text("online_attendance_info"),
+    meetingLink: text("meeting_link"),
     priceMinorUnits: integer("price_minor_units").notNull(),
     currency: text("currency").notNull(),
     seatCapacity: integer("seat_capacity"),

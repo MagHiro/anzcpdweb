@@ -24,6 +24,31 @@ test("all admin destinations render without application errors", async ({ page }
   }
 });
 
+test("class meeting link saves, reloads, and can be cleared", async ({ page }) => {
+  await page.goto("/admin/classes");
+  await page.locator('main a[href^="/admin/classes/"]').filter({ hasNotText: "New" }).first().click();
+  const field = page.getByLabel("Meeting link", { exact: false });
+  const original = await field.inputValue();
+  const editor = field.locator("xpath=ancestor::form");
+  const save = editor.getByRole("button", { name: /Save changes|Save class/ });
+  try {
+    await field.fill("https://meet.example.com/private-class?code=test");
+    await save.click();
+    await expect(editor.getByText("Class updated.", { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(field).toHaveValue("https://meet.example.com/private-class?code=test");
+    await field.fill("");
+    await save.click();
+    await expect(editor.getByText("Class updated.", { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(field).toHaveValue("");
+  } finally {
+    await field.fill(original);
+    await save.click();
+    await expect(editor.getByText("Class updated.", { exact: true })).toBeVisible();
+  }
+});
+
 test("source editor validates, saves with feedback, and deletes with confirmation", async ({ page }) => {
   await page.goto("/admin/source-references");
   await page.getByRole("button", { name: "New reference", exact: true }).click();

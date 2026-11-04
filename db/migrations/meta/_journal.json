@@ -43,6 +43,13 @@
       "when": 1793346659245,
       "tag": "0005_wide_human_torch",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793755332404,
+      "tag": "0006_complex_revanche",
+      "breakpoints": true
     }
   ]
 }

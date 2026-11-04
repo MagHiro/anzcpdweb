@@ -118,6 +118,7 @@ export const classFormSchema = z.object({
   venueName: z.string().trim().max(160).optional().or(z.literal("")),
   venueAddress: z.string().trim().max(500).optional().or(z.literal("")),
   onlineAttendanceInfo: z.string().trim().max(2_000).optional().or(z.literal("")),
+  meetingLink: z.url({ protocol: /^https?$/ }).trim().max(2_000).optional().or(z.literal("")),
   priceMinorUnits: z.coerce.number().int().min(0).max(10_000_000),
   currency: z.enum(["AUD", "NZD"]),
   seatCapacity: z.coerce.number().int().min(1).max(100_000).optional().or(z.literal("")),

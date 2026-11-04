@@ -138,6 +138,7 @@ export async function saveClass(input: {
   venueName?: string;
   venueAddress?: string;
   onlineAttendanceInfo?: string;
+  meetingLink?: string;
   priceMinorUnits: number;
   currency: "AUD" | "NZD";
   seatCapacity?: number | string;
@@ -188,6 +189,7 @@ export async function saveClass(input: {
     venueName: input.venueName || null,
     venueAddress: input.venueAddress || null,
     onlineAttendanceInfo: input.onlineAttendanceInfo || null,
+    meetingLink: input.meetingLink || null,
     priceMinorUnits: input.priceMinorUnits,
     currency: input.currency,
     seatCapacity: input.unlimitedCapacity ? null : Number(input.seatCapacity),
@@ -241,6 +243,7 @@ export async function duplicateClass(id: string) {
     venueName: source.venueName,
     venueAddress: source.venueAddress,
     onlineAttendanceInfo: source.onlineAttendanceInfo,
+    meetingLink: source.meetingLink,
     priceMinorUnits: source.priceMinorUnits,
     currency: source.currency,
     seatCapacity: source.seatCapacity,

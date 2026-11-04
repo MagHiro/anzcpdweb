@@ -340,7 +340,7 @@ async function enqueueBookingFulfilmentEmails(booking: typeof bookings.$inferSel
   const confirmationDedupeKey = `booking-confirmation:${reference}`;
   const [existingConfirmation] = await getDb().select({ id: emailOutbox.id }).from(emailOutbox).where(eq(emailOutbox.dedupeKey, confirmationDedupeKey)).limit(1);
   if (!existingConfirmation) {
-    const [activity] = await getDb().select({ startAt: classes.startAt }).from(classes).where(eq(classes.id, booking.classId)).limit(1);
+    const [activity] = await getDb().select({ startAt: classes.startAt, meetingLink: classes.meetingLink }).from(classes).where(eq(classes.id, booking.classId)).limit(1);
     if (!activity) throw new Error("Confirmation activity was not found.");
     const guestAccessToken = booking.userId ? undefined : await createAccountToken({ email: booking.email, purpose: "GUEST_BOOKING_ACCESS", bookingId: booking.id, expiresInMs: 30 * 24 * 60 * 60 * 1000 });
     await queueEmail({
@@ -350,6 +350,7 @@ async function enqueueBookingFulfilmentEmails(booking: typeof bookings.$inferSel
       bookingReference: reference,
       classTitle: booking.classTitleSnapshot,
       classDate: formatDateTime(activity.startAt, booking.timezoneSnapshot),
+      meetingLink: activity.meetingLink ?? undefined,
       detailUrl: guestAccessToken ? `${env.APP_URL}/booking/confirmation?token=${encodeURIComponent(guestAccessToken)}` : `${env.APP_URL}/account/bookings/${booking.id}`,
       amount: formatMoney(booking.amountSnapshot, booking.currencySnapshot),
     }, confirmationDedupeKey);

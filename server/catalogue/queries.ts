@@ -1,10 +1,13 @@
-import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gte, ilike, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import { auditLogs, bookings, categories, classMedia, classes, countries, payments, presenters, refunds, sourceReferences, classSourceReferences, type CountryCode, user } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { uuidSchema } from "@/lib/validation";
 
 const activeBookingStatuses = ["CONFIRMED", "PARTIALLY_REFUNDED"] as const;
 const reservingBookingStatuses = ["PENDING_PAYMENT", "PAYMENT_PROCESSING"] as const;
+
+// Meeting links are restricted to admin editing and confirmation emails.
+const publicClassColumns = Object.fromEntries(Object.entries(getTableColumns(classes)).filter(([key]) => key !== "meetingLink")) as Omit<ReturnType<typeof getTableColumns<typeof classes>>, "meetingLink">;
 
 function activeSeatCounts() {
   return getDb()
@@ -53,7 +56,7 @@ export async function getPublishedClasses(filters: {
 
   const rows = await db
     .select({
-      class: classes,
+      class: publicClassColumns,
       categoryName: categories.name,
       categorySlug: categories.slug,
       presenterName: presenters.name,
@@ -85,7 +88,7 @@ export async function getPublishedClassBySlug(slug: string) {
   const counts = activeSeatCounts();
   const [row] = await getDb()
     .select({
-      class: classes,
+      class: publicClassColumns,
       categoryName: categories.name,
       categorySlug: categories.slug,
       countryName: countries.name,

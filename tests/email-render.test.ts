@@ -16,6 +16,17 @@ const messages: EmailMessage[] = [
 ];
 
 describe("React Email templates", () => {
+  it("includes the optional meeting link with class details only when provided", async () => {
+    const confirmation = messages[5];
+    if (confirmation.type !== "BOOKING_CONFIRMATION") throw new Error("Expected confirmation");
+    const meetingLink = "https://meet.example.com/class?code=private&key=123";
+    const result = await renderMessage({ ...confirmation, meetingLink });
+    expect(result.text).toContain(meetingLink);
+    expect(result.text).toContain(confirmation.classTitle);
+    expect(result.text).toContain(confirmation.classDate);
+    expect(result.html).toContain('href="https://meet.example.com/class?code=private&amp;key=123"');
+    expect((await renderMessage(confirmation)).text).not.toContain("Meeting link:");
+  });
   it("includes password reset safety instructions", async () => {
     const result = await renderMessage(messages[1]);
     expect(result.text).toContain("If you did not request this");

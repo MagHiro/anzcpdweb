@@ -10,6 +10,8 @@ import { completeAccountLink, createAccountToken } from "@/server/auth/tokens";
 import { createBookingCheckout, markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
 import { cancelClass, deleteSourceReference, publishClass, replaceClassSources, saveSourceReference } from "@/server/catalogue/service";
 import { syncPaymentRefundTotals, syncRefundFromStripe } from "@/server/payments/refunds";
+import { getPublishedClassBySlug, getPublishedClasses } from "@/server/catalogue/queries";
+import { makePublicBookingReference } from "@/lib/utils";
 
 describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests", () => {
   let db: ReturnType<typeof getDb>;
@@ -40,7 +42,7 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
 
   it("confirms free bookings without Stripe, deduplicates retries, and enforces capacity", async () => {
     const { record, booking: unused } = await fixture("CANCELLED");
-    await db.update(classes).set({ priceMinorUnits: 0 }).where(eq(classes.id, record.id));
+    await db.update(classes).set({ priceMinorUnits: 0, meetingLink: "https://meet.example.com/free-private" }).where(eq(classes.id, record.id));
     const input = { classSlug: record.slug, fullName: "Free attendee", email: `free-${randomUUID()}@example.com`, createAccountRequested: true, termsAcceptedAt: new Date(), refundPolicyAcceptedAt: new Date(), idempotencyKey: randomUUID() };
     tokenEmails.push(input.email);
     const result = await createBookingCheckout(input);
@@ -63,6 +65,8 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     // Confirmation and account setup are queued through the regular fulfilment flow.
     const confirmations = await db.select().from(emailOutbox).where(eq(emailOutbox.recipientEmail, input.email));
     expect(confirmations.filter(message => message.messageType === "BOOKING_CONFIRMATION")).toHaveLength(1);
+    expect(confirmations.find(message => message.messageType === "BOOKING_CONFIRMATION")?.payload).toMatchObject({ meetingLink: "https://meet.example.com/free-private" });
+    expect(confirmations.filter(message => message.messageType !== "BOOKING_CONFIRMATION").every(message => !("meetingLink" in (message.payload as object)))).toBe(true);
     expect(confirmations.filter(message => message.messageType === "ACCOUNT_SETUP")).toHaveLength(1);
     const receiptMessages = confirmations.filter(message => message.messageType === "PAYMENT_RECEIPT");
     expect(receiptMessages).toHaveLength(1);
@@ -73,11 +77,19 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
   });
 
   it("issues one immutable receipt and one email only after successful payment", async () => {
-    const { booking, session } = await fixture("PENDING_PAYMENT");
+    const { record, booking, session } = await fixture("PENDING_PAYMENT");
+    const meetingLink = "https://meet.example.com/paid-private";
+    await db.update(classes).set({ meetingLink }).where(eq(classes.id, record.id));
+    expect(await getPublishedClassBySlug(record.slug)).not.toHaveProperty("meetingLink");
+    const catalogue = await getPublishedClasses({ search: record.title });
+    expect(catalogue.find(activity => activity.id === record.id)).not.toHaveProperty("meetingLink");
     expect(await issuePaymentReceipt(booking.id)).toBeNull();
     await markCheckoutCompleted({ session, paymentSucceeded: false });
     expect(await issuePaymentReceipt(booking.id)).toBeNull();
+    expect(await db.select().from(emailOutbox).where(eq(emailOutbox.dedupeKey, `booking-confirmation:${makePublicBookingReference(booking.id)}`))).toHaveLength(0);
     await markCheckoutCompleted({ session, paymentSucceeded: true });
+    const confirmationMessages = await db.select().from(emailOutbox).where(eq(emailOutbox.messageType, "BOOKING_CONFIRMATION"));
+    expect(confirmationMessages.filter(message => (message.payload as { meetingLink?: string }).meetingLink === meetingLink)).toHaveLength(1);
     const original = await issuePaymentReceipt(booking.id);
     expect(original?.amountPaid).toBe(10000);
     await db.update(bookings).set({ fullName: "Changed contact", classTitleSnapshot: "Changed title" }).where(eq(bookings.id, booking.id));

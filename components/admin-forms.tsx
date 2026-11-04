@@ -129,6 +129,7 @@ export function AdminClassForm({ classRecord, categories, presenters: presenterO
       <Field label="Venue name"><TextInput name="venueName" defaultValue={classRecord?.venueName ?? ""} /></Field>
       <Field label="Venue address"><TextArea name="venueAddress" defaultValue={classRecord?.venueAddress ?? ""} className="min-h-24" /></Field>
       <Field label="Online attendance information" className="sm:col-span-2"><TextArea name="onlineAttendanceInfo" defaultValue={classRecord?.onlineAttendanceInfo ?? ""} className="min-h-24" /></Field>
+      <Field label="Meeting link" hint="Included only in the booking confirmation email." error={state.fieldErrors?.meetingLink} className="sm:col-span-2"><TextInput name="meetingLink" type="url" maxLength={2000} defaultValue={classRecord?.meetingLink ?? ""} /></Field>
     </div></section>
     <section id="editor-2" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Capacity and CPD</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
       <Field label="Seat capacity" hint="Leave blank only when unlimited." error={state.fieldErrors?.seatCapacity}><TextInput name="seatCapacity" type="number" min={1} defaultValue={classRecord?.seatCapacity ?? ""} /></Field>
