@@ -88,7 +88,7 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     expect(await issuePaymentReceipt(booking.id)).toBeNull();
     expect(await db.select().from(emailOutbox).where(eq(emailOutbox.dedupeKey, `booking-confirmation:${makePublicBookingReference(booking.id)}`))).toHaveLength(0);
     await markCheckoutCompleted({ session, paymentSucceeded: true });
-    const confirmationMessages = await db.select().from(emailOutbox).where(eq(emailOutbox.messageType, "BOOKING_CONFIRMATION"));
+    const confirmationMessages = await db.select().from(emailOutbox).where(eq(emailOutbox.dedupeKey, `booking-confirmation:${makePublicBookingReference(booking.id)}`));
     expect(confirmationMessages.filter(message => (message.payload as { meetingLink?: string }).meetingLink === meetingLink)).toHaveLength(1);
     const original = await issuePaymentReceipt(booking.id);
     expect(original?.amountPaid).toBe(10000);

@@ -6,10 +6,12 @@ import { getServerEnv, resolveEmailProvider, type ServerEnv } from "@/lib/env";
 import { emailOutbox, paymentReceipts } from "@/db/schema";
 import { renderReceiptPdf } from "@/server/payments/receipt-pdf";
 import { renderMessage } from "./render";
+import { refreshEventReminder, type EventReminderMessage } from "./reminders";
 
 let smtpTransporter: Transporter | undefined;
 
 export type EmailMessage =
+  | EventReminderMessage
   | {
       type: "PAYMENT_RECEIPT";
       email: string;
@@ -100,6 +102,7 @@ export async function queueEmail(message: EmailMessage, dedupeKey?: string): Pro
 }
 
 function emailDedupeKey(message: EmailMessage): string {
+  if (message.type === "EVENT_REMINDER") return `event-reminder:${message.bookingId}:${message.eventStartAt}:${message.daysBefore}`;
   if (message.type === "PAYMENT_RECEIPT") return `payment-receipt:${message.receiptNumber}`;
   if (message.type === "BOOKING_CONFIRMATION") return `booking-confirmation:${message.bookingReference}`;
   if (message.type === "BOOKING_CANCELLED") return `booking-cancelled:${message.bookingReference}`;
@@ -186,7 +189,16 @@ export async function processEmailOutbox(limit = 20): Promise<{ sent: number; fa
     if (!claimed.length) continue;
 
     try {
-      await deliver(row.payload as EmailMessage);
+      let message = row.payload as EmailMessage;
+      if (message.type === "EVENT_REMINDER") {
+        const refreshed = await refreshEventReminder(message);
+        if (!refreshed) {
+          await db.delete(emailOutbox).where(eq(emailOutbox.id, row.id));
+          continue;
+        }
+        message = refreshed;
+      }
+      await deliver(message);
       await db.update(emailOutbox).set({ status: "SENT", sentAt: new Date(), updatedAt: new Date() }).where(eq(emailOutbox.id, row.id));
       sent += 1;
     } catch (error) {
