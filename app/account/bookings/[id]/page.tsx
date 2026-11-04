@@ -8,6 +8,7 @@ import { CancelBookingForm } from "@/components/account-forms";
 import { StatusBadge } from "@/components/ui";
 import { formatDateTime, formatMoney, makePublicBookingReference } from "@/lib/utils";
 import { getCpdLabel } from "@/lib/domain/countries";
+import { getBookingJoinAccess } from "@/server/bookings/join";
 
 export default async function CustomerBookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession();
@@ -17,6 +18,7 @@ export default async function CustomerBookingDetailPage({ params }: { params: Pr
   const row = await getCustomerBookingById(session.user.id, id);
   if (!row) notFound();
   const entitled = hasAttendanceEntitlement(row.booking.status);
+  const join = await getBookingJoinAccess(session.user.id, id);
   const cpd = getCpdLabel(row.booking.cpdUnitTypeSnapshot, row.booking.cpdAmountSnapshot);
   return <div>
     <Link href="/account/bookings" className="ink-link">← Back to bookings</Link>
@@ -40,6 +42,7 @@ export default async function CustomerBookingDetailPage({ params }: { params: Pr
         {entitled && <div className="mt-8 border-t border-[var(--line)] pt-6"><h3 className="font-semibold">Attendance information</h3><p className="mt-3 whitespace-pre-wrap text-sm leading-6">{row.onlineAttendanceInfo || row.venueName || "Attendance details will be provided before the activity."}</p></div>}
       </section>
       <aside className="space-y-5">
+        {join.state !== "hidden" && <div>{join.state === "available" ? <a href={`/account/bookings/${id}/join`} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-2xl bg-[var(--forest)] px-5 py-3 text-sm font-semibold text-white">Join webinar</a> : <><button type="button" disabled className="inline-flex cursor-not-allowed rounded-2xl bg-gray-200 px-5 py-3 text-sm font-semibold text-gray-500">Join webinar</button><p className="mt-2 text-sm text-[var(--muted)]">{join.state === "upcoming" ? `Available on the event date (${join.timezone}).` : join.state === "ended" ? "This event has ended." : "The meeting link has not been added yet."}</p></>}</div>}
         {(row.booking.paidAt || (row.booking.amountSnapshot === 0 && row.booking.confirmedAt)) && <Link href={`/booking/receipt/${id}`} className="inline-flex rounded-lg border border-[var(--line)] bg-white px-5 py-3 text-sm font-semibold text-[var(--forest)]">View receipt</Link>}
         <section className="rounded-xl bg-[var(--forest)] p-6 text-white"><h2 className="display text-2xl">Need help?</h2><p className="mt-3 text-sm leading-6 text-white/80">For refund questions, attendance changes or account support, contact the academy with your booking reference.</p><Link href="/account/support" className="mt-5 inline-flex rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-[var(--forest)]">Contact support</Link></section>
         {row.booking.status === "PENDING_PAYMENT" && <section className="rounded-xl border border-[var(--line)] bg-white p-6"><h2 className="display text-2xl text-[var(--forest)]">Cancel unpaid booking</h2><p className="my-4 text-sm leading-6 text-[var(--muted)]">This closes an unpaid Checkout session and releases the reserved place.</p><CancelBookingForm bookingId={row.booking.id} /></section>}
