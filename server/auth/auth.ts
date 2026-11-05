@@ -28,8 +28,8 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 30,
-    updateAge: 60 * 60 * 24,
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 12,
   },
   user: {
     additionalFields: {
@@ -42,6 +42,10 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: 12,
+    maxPasswordLength: 128,
+    revokeSessionsOnPasswordReset: true,
+    resetPasswordTokenExpiresIn: 30 * 60,
     requireEmailVerification: true,
     sendResetPassword: async ({ user: resetUser, url }) => {
       await queueEmail({ type: "PASSWORD_RESET", email: resetUser.email, name: resetUser.name, url });

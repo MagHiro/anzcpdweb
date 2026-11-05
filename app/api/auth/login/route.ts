@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const parsed = authLoginSchema.safeParse(payload);
   if (!parsed.success) return NextResponse.json({ error: "Enter a valid email and password." }, { status: 400 });
   const ip = getClientIp(request.headers);
-  if (!(await consumeRateLimit({ key: `login:${ip}:${parsed.data.email}`, limit: 10, windowMs: 15 * 60 * 1000 }))) return NextResponse.json({ error: "Too many sign-in attempts. Please try again later." }, { status: 429 });
+  if (!(await consumeRateLimit({ key: `login-ip:${ip}`, limit: 30, windowMs: 15 * 60 * 1000 })) || !(await consumeRateLimit({ key: `login-email:${parsed.data.email}`, limit: 10, windowMs: 15 * 60 * 1000 }))) return NextResponse.json({ error: "Too many sign-in attempts. Please try again later." }, { status: 429 });
   const verification = await verifyTurnstile({ token: parsed.data.turnstileToken, remoteIp: ip });
   if (!verification.ok) return NextResponse.json({ error: verification.message }, { status: 400 });
   try {

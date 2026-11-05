@@ -14,7 +14,8 @@ test("join button works before event day and redirect checks account ownership",
   const [booking] = await db.insert(bookings).values({ classId: activity.id, userId: owner.id, fullName: "Join attendee", email: owner.email, country: "AU", status: "CONFIRMED", amountSnapshot: 0, currencySnapshot: "AUD", classTitleSnapshot: activity.title, timezoneSnapshot: activity.timezone, termsAcceptedAt: new Date(), refundPolicyAcceptedAt: new Date(), idempotencyKey: randomUUID() }).returning();
   const path = `/account/bookings/${booking.id}`;
   try {
-    const login = await page.request.post("/api/auth/login", { data: { email: process.env.ADMIN_TEST_EMAIL, password: process.env.ADMIN_TEST_PASSWORD }, headers: { origin: "http://127.0.0.1:3100" } });
+    const { version } = await (await page.request.get("/api/version")).json();
+    const login = await page.request.post("/api/auth/login", { data: { email: process.env.ADMIN_TEST_EMAIL, password: process.env.ADMIN_TEST_PASSWORD }, headers: { origin: "http://127.0.0.1:3100", "x-app-version": version } });
     expect(login.ok()).toBe(true);
     await page.goto(path);
     await expect(page.getByRole("link", { name: "Join webinar" })).toBeVisible();

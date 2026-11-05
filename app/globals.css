@@ -770,3 +770,8 @@ dialog::backdrop { background: #152a2260; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+.deployment-update { position: fixed; inset: 0; margin: auto; width: min(440px, calc(100% - 40px)); padding: 32px; border: 0; border-radius: 24px; background: #fafcfb; color: #14382c; box-shadow: 0 24px 80px #14382c33; }
+.deployment-update::backdrop { background: #14382c80; }
+.deployment-update h2 { font-family: var(--font-display), sans-serif; font-size: 26px; font-weight: 400; }
+.deployment-update p { margin-top: 12px; font-size: 15px; line-height: 1.6; }
+.deployment-update button { margin-top: 24px; padding: 12px 20px; border-radius: 16px; background: #14382c; color: white; font-size: 14px; font-weight: 500; }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Google_Sans, Google_Sans_Flex } from "next/font/google";
 import { AppChrome } from "@/components/app-chrome";
+import { DeploymentGuard } from "@/components/deployment-guard";
 import "./globals.css";
 
 const body = Google_Sans_Flex({
@@ -20,5 +21,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en-AU" className={`${body.className} ${display.variable}`} data-scroll-behavior="smooth"><body><AppChrome>{children}</AppChrome></body></html>;
+  return <html lang="en-AU" className={`${body.className} ${display.variable}`} data-scroll-behavior="smooth"><body><DeploymentGuard /><AppChrome>{children}</AppChrome></body></html>;
 }

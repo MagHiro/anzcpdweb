@@ -80,9 +80,9 @@ export function safeInternalPath(value: string | undefined, fallback = "/account
 
 export function getClientIp(headers: Headers): string {
   return (
-    headers.get("cf-connecting-ip") ??
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    headers.get("x-real-ip") ??
+    // The loopback-only app is behind Apache, which appends the connected peer.
+    // Never trust client-supplied CF-Connecting-IP / X-Real-IP or the first hop.
+    headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() ??
     "unknown"
   );
 }

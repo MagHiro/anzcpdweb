@@ -6,7 +6,8 @@ test.beforeAll(async ({ playwright }) => {
   const password = process.env.ADMIN_TEST_PASSWORD;
   test.skip(!email || !password, "Local admin credentials required");
   const request = await playwright.request.newContext({ baseURL: "http://127.0.0.1:3100" });
-  const response = await request.post("/api/auth/login", { data: { email, password }, headers: { origin: "http://127.0.0.1:3100" } });
+  const { version } = await (await request.get("/api/version")).json();
+  const response = await request.post("/api/auth/login", { data: { email, password }, headers: { origin: "http://127.0.0.1:3100", "x-app-version": version } });
   expect(response.ok()).toBe(true);
   storage = await request.storageState();
   await request.dispose();

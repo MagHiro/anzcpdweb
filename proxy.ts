@@ -1,6 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { appVersion, deploymentField, deploymentHeader, requiresCurrentDeployment } from "@/lib/deployment";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  if (requiresCurrentDeployment(request.method, request.nextUrl.pathname)) {
+    let version = request.headers.get(deploymentHeader);
+    if (!version && /^(multipart\/form-data|application\/x-www-form-urlencoded)/i.test(request.headers.get("content-type") ?? "")) {
+      try { version = (await request.clone().formData()).get(deploymentField)?.toString() ?? null; } catch { /* Missing or malformed version is rejected below. */ }
+    }
+    if (version !== appVersion) {
+      return NextResponse.json({ code: "DEPLOYMENT_UPDATED", error: "The application has been updated. Reload the page before continuing." }, {
+        status: 409,
+        headers: { "Cache-Control": "no-store", [deploymentHeader]: appVersion },
+      });
+    }
+  }
   const nonce = btoa(crypto.randomUUID());
   const isProduction = process.env.NODE_ENV === "production";
   const csp = [
@@ -22,7 +35,8 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Referrer-Policy", "no-referrer");
+  if (/^\/(api|admin|account|booking)(\/|$)/.test(request.nextUrl.pathname) || ["/sign-in", "/reset-password", "/verify-email"].includes(request.nextUrl.pathname)) response.headers.set("Cache-Control", "private, no-store, max-age=0");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   response.headers.set("X-Frame-Options", "DENY");
   if (isProduction) response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");

@@ -6,6 +6,9 @@ export async function consumeRateLimit(input: { key: string; limit: number; wind
   const db = getDb();
   const now = new Date();
   return db.transaction(async (tx) => {
+    // Serialize even the first request, before a bucket row exists. Row locks
+    // alone cannot protect concurrent inserts into a previously empty bucket.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${input.key}, 0))`);
     const [existing] = await tx
       .select()
       .from(rateLimitBuckets)
