@@ -4,16 +4,23 @@
 /* Booking: a focused form with a persistent activity summary. */
 .booking-page, .confirmation-page { padding-block: 48px 80px; }
 .booking-page > div, .confirmation-page > div { max-width: 1200px; }
-.booking-page-content { margin-top: 36px; }
+.booking-page-content { margin-top: 32px; }
+.academy-site .booking-heading h1 { font-weight: 400; font-size: clamp(30px, 3.5vw, 42px); letter-spacing: -.025em; }
+.booking-page > div > a { padding-inline: 0; font-weight: 400; }
+.booking-form label, .booking-form .form-field > label { font-weight: 400; }
+.booking-form strong, .booking-form .font-bold, .booking-form .font-semibold { font-weight: 500; }
+.booking-form .booking-agreements label { font-weight: 400; }
+.booking-form .booking-agreements a { font-weight: 400; text-decoration-color: currentColor; }
+.booking-form .booking-review dd { font-weight: 500; }
 .booking-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); gap: 40px; align-items: start; }
 .booking-form-main { grid-column: 1; grid-row: 1; min-width: 0; display: grid; gap: 24px; }
-.booking-summary { grid-column: 2; position: sticky; top: 124px; min-width: 0; padding: 32px; background: #f0f7f2; border-radius: 28px; }
-.academy-site .booking-summary h2 { font-size: 26px; line-height: 1.3; margin-top: 24px; font-weight: 500; }
+.booking-summary { grid-column: 2; position: sticky; top: 124px; min-width: 0; padding: 32px; background: #f0f7f2; border-radius: 24px; }
+.academy-site .booking-summary h2 { font-size: 25px; line-height: 1.35; margin-top: 0; font-weight: 400; }
 .booking-summary-total { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-top: 28px; padding-top: 24px; border-top: 1px solid #dce9df; font-size: 14px; }
 .booking-summary-total strong { font-size: 26px; font-weight: 500; }
 .booking-summary-note { margin-top: 16px; font-size: 13px; line-height: 1.7; color: var(--muted); }
 .booking-summary-link { display: inline-block; margin-top: 24px; font-size: 14px; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; }
-.booking-form-section { min-width: 0; padding: 32px; background: white; border-radius: 28px; box-shadow: 0 10px 36px -20px #14382c26; }
+.booking-form-section { min-width: 0; padding: 32px; background: white; border-radius: 24px; box-shadow: 0 10px 36px -20px #14382c26; }
 .academy-site .booking-form-section h2 { margin: 0 0 24px; font-size: 21px; line-height: 28px; font-weight: 500; }
 .booking-agreements { display: grid; gap: 20px; }
 .booking-agreements h2 { margin-bottom: 0 !important; }

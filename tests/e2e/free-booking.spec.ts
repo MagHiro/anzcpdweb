@@ -15,6 +15,10 @@ test("zero-cost booking completes without a Stripe redirect", async ({ page }) =
   try {
     await page.goto(`/classes/${activity.slug}/book`);
     await expect(page.getByRole("heading", { name: "Complete your booking" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Complete your booking" })).toHaveCSS("font-weight", "400");
+    await expect(page.locator('.booking-form label[for]').first()).toHaveCSS("font-weight", "400");
+    await expect(page.getByRole("checkbox", { name: /Create an account to manage my bookings/ })).toBeVisible();
+    await expect(page.getByText(/predictable password|proof of payment/)).toHaveCount(0);
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

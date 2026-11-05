@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { bookings, categories, classes, user } from "@/db/schema";
 import { getDb } from "@/lib/db";
 
-test("join button stays disabled until event day and redirect checks account ownership", async ({ page }) => {
+test("join button works before event day and redirect checks account ownership", async ({ page }) => {
   test.skip(!process.env.ADMIN_TEST_EMAIL || !process.env.ADMIN_TEST_PASSWORD, "Local credentials required");
   const db = getDb();
   const [owner] = await db.select().from(user).where(eq(user.email, process.env.ADMIN_TEST_EMAIL!));
@@ -17,11 +17,6 @@ test("join button stays disabled until event day and redirect checks account own
     const login = await page.request.post("/api/auth/login", { data: { email: process.env.ADMIN_TEST_EMAIL, password: process.env.ADMIN_TEST_PASSWORD }, headers: { origin: "http://127.0.0.1:3100" } });
     expect(login.ok()).toBe(true);
     await page.goto(path);
-    await expect(page.getByRole("button", { name: "Join webinar" })).toBeDisabled();
-    expect((await page.request.get(`${path}/join`, { maxRedirects: 0 })).status()).toBe(403);
-    expect(await page.content()).not.toContain(activity.meetingLink!);
-    await db.update(classes).set({ startAt: new Date(), endAt: new Date(Date.now() + 3600000) }).where(eq(classes.id, activity.id));
-    await page.reload();
     await expect(page.getByRole("link", { name: "Join webinar" })).toBeVisible();
     const redirect = await page.request.get(`${path}/join`, { maxRedirects: 0 });
     expect(redirect.status()).toBe(302);

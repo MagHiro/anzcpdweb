@@ -4,8 +4,9 @@ import { webinarJoinState } from "@/server/bookings/join";
 const event = { bookingStatus: "CONFIRMED", classStatus: "PUBLISHED", deliveryFormat: "ONLINE", meetingLink: "https://zoom.us/j/123", startAt: new Date("2026-11-17T00:00:00Z"), endAt: new Date("2026-11-17T01:00:00Z"), timezone: "Pacific/Auckland" };
 
 describe("webinar join access", () => {
-  it("unlocks at midnight in the event timezone, not the server timezone", () => {
-    expect(webinarJoinState(event, new Date("2026-11-16T10:59:59Z"))).toBe("upcoming");
+  it("allows joining before the event date and until the event ends", () => {
+    expect(webinarJoinState(event, new Date("2026-11-01T10:00:00Z"))).toBe("available");
+    expect(webinarJoinState(event, new Date("2026-11-16T10:59:59Z"))).toBe("available");
     expect(webinarJoinState(event, new Date("2026-11-16T11:00:00Z"))).toBe("available");
     expect(webinarJoinState(event, event.startAt)).toBe("available");
     expect(webinarJoinState(event, event.endAt)).toBe("ended");

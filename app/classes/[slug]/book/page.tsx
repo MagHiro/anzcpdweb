@@ -28,7 +28,7 @@ export default async function BookClassPage({ params }: { params: Promise<{ slug
   };
   return <Section className="booking-page"><Container>
     <LinkButton href={`/classes/${record.slug}`} variant="quiet">← Back to activity</LinkButton>
-    <PageIntro title="Complete your booking" description="Enter your attendee details, then review and confirm." />
+    <PageIntro title="Complete your booking" className="booking-heading" />
     <div className="booking-page-content">
       <BookingForm classRecord={bookingClass} siteKey={getServerEnv().NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
     </div>
