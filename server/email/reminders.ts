@@ -7,6 +7,7 @@ export type EventReminderMessage = {
   bookingId: string;
   eventStartAt: string;
   daysBefore: 1 | 3;
+  manual?: boolean;
   email: string;
   name: string;
   classTitle: string;
@@ -28,7 +29,7 @@ export function reminderIsDue(startAt: Date, daysBefore: 1 | 3, now: Date) {
   return now.getTime() >= due && now.getTime() < due + hour;
 }
 
-function messageFor(booking: typeof bookings.$inferSelect, activity: typeof classes.$inferSelect, daysBefore: 1 | 3): EventReminderMessage {
+export function messageFor(booking: typeof bookings.$inferSelect, activity: typeof classes.$inferSelect, daysBefore: 1 | 3): EventReminderMessage {
   return {
     type: "EVENT_REMINDER", bookingId: booking.id, eventStartAt: activity.startAt.toISOString(), daysBefore,
     email: booking.email, name: booking.fullName, classTitle: activity.title,
@@ -66,6 +67,6 @@ export async function refreshEventReminder(message: EventReminderMessage, now = 
     .innerJoin(classes, eq(bookings.classId, classes.id)).where(eq(bookings.id, message.bookingId)).limit(1);
   if (!row || !activeBookings.includes(row.booking.status as typeof activeBookings[number]) ||
     !activeClasses.includes(row.activity.status as typeof activeClasses[number]) ||
-    row.activity.startAt.toISOString() !== message.eventStartAt || !reminderIsDue(row.activity.startAt, message.daysBefore, now)) return null;
-  return messageFor(row.booking, row.activity, message.daysBefore);
+    row.activity.startAt.toISOString() !== message.eventStartAt || (message.manual ? row.activity.startAt <= now : !reminderIsDue(row.activity.startAt, message.daysBefore, now))) return null;
+  return { ...messageFor(row.booking, row.activity, message.daysBefore), ...(message.manual ? { manual: true } : {}) };
 }

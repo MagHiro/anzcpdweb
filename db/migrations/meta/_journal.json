@@ -57,6 +57,13 @@
       "when": 1793923169306,
       "tag": "0007_strong_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793937729894,
+      "tag": "0008_glamorous_madripoor",
+      "breakpoints": true
     }
   ]
 }

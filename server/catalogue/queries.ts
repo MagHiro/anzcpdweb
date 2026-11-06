@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, getTableColumns, gte, ilike, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
-import { auditLogs, bookings, categories, classMedia, classes, countries, payments, presenters, refunds, sourceReferences, classSourceReferences, type CountryCode, user } from "@/db/schema";
+import { auditLogs, bookings, categories, classMedia, classes, countries, payments, presenters, refunds, sourceReferences, classSourceReferences, type CountryCode, user, emailOutbox } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { uuidSchema } from "@/lib/validation";
 
@@ -251,14 +251,44 @@ export async function getAdminStats() {
   return { classes: classStats, bookings: bookingStats };
 }
 
-export async function getAdminBookingRows(filters?: { search?: string; status?: string; classId?: string; page?: number; pageSize?: number }) {
-  const page = Math.min(Math.max(filters?.page ?? 1, 1), 10_000);
-  const pageSize = Math.min(filters?.pageSize ?? 25, 100);
+type AdminBookingFilters = { search?: string; status?: string; classId?: string; participants?: boolean; page?: number; pageSize?: number };
+
+function adminBookingConditions(filters?: AdminBookingFilters) {
   const conditions = [] as ReturnType<typeof eq>[];
   if (filters?.search) conditions.push(or(ilike(bookings.email, `%${filters.search.replace(/[%_]/g, "\\$&")}%`), ilike(bookings.fullName, `%${filters.search.replace(/[%_]/g, "\\$&")}%`)) as never);
-  if (filters?.status && ["PENDING_PAYMENT", "PAYMENT_PROCESSING", "CONFIRMED", "PAYMENT_FAILED", "CANCELLED", "PARTIALLY_REFUNDED", "REFUNDED", "EXPIRED"].includes(filters.status)) conditions.push(eq(bookings.status, filters.status as never));
-  if (filters?.classId && uuidSchema.safeParse(filters.classId).success) conditions.push(eq(bookings.classId, filters.classId));
-  return getDb().select({ booking: bookings, classTitle: classes.title }).from(bookings).innerJoin(classes, eq(bookings.classId, classes.id)).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(bookings.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
+  if (filters?.participants) conditions.push(inArray(bookings.status, activeBookingStatuses));
+  else if (filters?.status && ["PENDING_PAYMENT", "PAYMENT_PROCESSING", "CONFIRMED", "PAYMENT_FAILED", "CANCELLED", "PARTIALLY_REFUNDED", "REFUNDED", "EXPIRED"].includes(filters.status)) conditions.push(eq(bookings.status, filters.status as never));
+  if (filters?.classId) conditions.push(uuidSchema.safeParse(filters.classId).success ? eq(bookings.classId, filters.classId) : sql`false`);
+  return conditions;
+}
+
+export async function getAdminBookingRows(filters?: AdminBookingFilters) {
+  const page = Math.min(Math.max(Math.floor(filters?.page ?? 1) || 1, 1), 10_000);
+  const pageSize = Math.min(filters?.pageSize ?? 25, 100);
+  const conditions = adminBookingConditions(filters);
+  return getDb().select({ booking: bookings, classTitle: classes.title }).from(bookings).innerJoin(classes, eq(bookings.classId, classes.id)).where(and(...conditions)).orderBy(desc(bookings.createdAt), desc(bookings.id)).limit(pageSize).offset((page - 1) * pageSize);
+}
+
+export async function getAdminBookingCount(filters?: AdminBookingFilters) {
+  const [row] = await getDb().select({ count: sql<number>`count(*)::int` }).from(bookings).where(and(...adminBookingConditions(filters)));
+  return row.count;
+}
+
+export async function getAdminBookingClasses() {
+  return getDb().select({
+    id: classes.id, title: classes.title, startAt: classes.startAt, timezone: classes.timezone,
+    status: classes.status, seatCapacity: classes.seatCapacity, unlimitedCapacity: classes.unlimitedCapacity,
+    participants: sql<number>`count(${bookings.id}) filter (where ${inArray(bookings.status, activeBookingStatuses)})::int`,
+    pending: sql<number>`count(${bookings.id}) filter (where ${inArray(bookings.status, reservingBookingStatuses)})::int`,
+    total: sql<number>`count(${bookings.id})::int`,
+  }).from(classes).leftJoin(bookings, eq(bookings.classId, classes.id)).groupBy(classes.id).orderBy(desc(classes.startAt), asc(classes.id));
+}
+
+export async function getAdminReminderRows(bookingIds: string[], eventStartAt?: Date) {
+  if (!bookingIds.length) return [];
+  return getDb().select({ id: emailOutbox.id, bookingId: sql<string>`${emailOutbox.payload}->>'bookingId'`, daysBefore: sql<string>`${emailOutbox.payload}->>'daysBefore'`, manual: sql<string>`${emailOutbox.payload}->>'manual'`, status: emailOutbox.status, sentAt: emailOutbox.sentAt, createdAt: emailOutbox.createdAt })
+    .from(emailOutbox).where(and(eq(emailOutbox.messageType, "EVENT_REMINDER"), inArray(sql`${emailOutbox.payload}->>'bookingId'`, bookingIds), eventStartAt ? eq(sql`${emailOutbox.payload}->>'eventStartAt'`, eventStartAt.toISOString()) : undefined))
+    .orderBy(desc(emailOutbox.createdAt));
 }
 
 export async function getAdminBookingById(id: string) {

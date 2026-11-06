@@ -294,6 +294,8 @@ export const bookings = pgTable(
     professionalIdentifier: text("professional_identifier"),
     createAccountRequested: boolean("create_account_requested").notNull().default(false),
     status: bookingStatusEnum("status").notNull().default("PENDING_PAYMENT"),
+    attendance: text("attendance").notNull().default("NOT_RECORDED"),
+    attendanceRecordedAt: timestamp("attendance_recorded_at", { withTimezone: true }),
     amountSnapshot: integer("amount_snapshot").notNull(),
     currencySnapshot: text("currency_snapshot").notNull(),
     classTitleSnapshot: text("class_title_snapshot").notNull(),
