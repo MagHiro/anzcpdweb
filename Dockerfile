@@ -9,7 +9,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS tools
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-COPY . .
+COPY --chown=1001:1001 . .
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 USER nextjs
 
