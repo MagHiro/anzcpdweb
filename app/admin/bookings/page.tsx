@@ -32,7 +32,7 @@ export default async function AdminBookingsPage({ searchParams }: {
     query.set("page", String(nextPage));
     return `/admin/bookings?${query}`;
   };
-  const rosterHref = (id: string) => `/admin/bookings?classId=${id}&status=participants`;
+  const rosterHref = (id: string) => `/admin/classes/${id}/participants`;
 
   return <div>
     <h1 className="display text-5xl text-[var(--forest)]">Bookings</h1>

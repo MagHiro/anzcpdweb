@@ -1,5 +1,11 @@
 # Security maintenance
 
+## Class resources
+
+- PDF materials are stored outside `public` on the persistent `private-resources` volume. Back up this volume alongside the database; database backups alone do not include PDF content.
+- Resources are drafts until explicitly published. Every download checks the signed-in account for an active owned booking (confirmed or partially refunded); administrators may preview drafts. Cancellation or full refund removes participant access. No public catalogue resource URLs are exposed.
+- Recording links use the same access checks, but external video hosts must enforce playback restrictions; redirects cannot prevent sharing the destination URL. Use authenticated/domain-restricted hosting where required.
+
 ## Authentication boundaries
 
 - Browser authentication uses the application routes with validation, Turnstile where configured, origin checks, and PostgreSQL-backed rate limits. The generic Better Auth handler exposes only session reads, verification/reset callbacks, and sign-out. Do not expose raw sign-in/sign-up/password mutation endpoints without equivalent controls.

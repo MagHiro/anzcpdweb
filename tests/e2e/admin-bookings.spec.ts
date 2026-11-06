@@ -26,7 +26,8 @@ test("admin can browse class counts, inspect participants and combine booking fi
     await page.getByRole("combobox", { name: "Class period" }).selectOption("upcoming");
     await page.getByRole("button", { name: "Filter", exact: true }).click();
     await classRow.getByRole("link", { name: `View participants for ${activity.title}` }).click();
-    await expect(page.getByRole("region", { name: "Selected class" })).toContainText("2 participants / 10 capacity");
+    await expect(page).toHaveURL(`/admin/classes/${activity.id}/participants`);
+    await expect(page.getByRole("heading", { name: "Participants (2)" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Roster attendee 0", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Roster attendee 1", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Roster attendee 2", exact: true })).toHaveCount(0);
@@ -51,6 +52,7 @@ test("admin can browse class counts, inspect participants and combine booking fi
     await expect(attendeeRow.getByText("Attendance saved.")).toBeVisible();
     await page.reload();
     await expect(attendeeRow.getByRole("combobox", { name: "Attendance", exact: true })).toHaveValue("ATTENDED");
+    await page.getByRole("link", { name: "All booking records" }).click();
     await page.getByRole("combobox", { name: "Booking status", exact: true }).selectOption("PENDING_PAYMENT");
     await page.getByRole("button", { name: "Filter", exact: true }).click();
     await expect(page.getByRole("link", { name: "Roster attendee 2", exact: true })).toBeVisible();

@@ -281,6 +281,17 @@ export const classSourceReferences = pgTable(
   (table) => [primaryKey({ columns: [table.classId, table.sourceReferenceId] })],
 );
 
+export const classResources = pgTable("class_resources", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  classId: uuid("class_id").notNull().references(() => classes.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  kind: text("kind").notNull(),
+  objectKey: text("object_key"),
+  recordingUrl: text("recording_url"),
+  published: boolean("published").notNull().default(false),
+  ...createdUpdated,
+}, table => [index("class_resources_class_idx").on(table.classId)]);
+
 export const bookings = pgTable(
   "bookings",
   {

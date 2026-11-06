@@ -12,3 +12,4 @@ public/assets/*
 !public/assets/.gitkeep
 *.log
 *.tsbuildinfo
+private/

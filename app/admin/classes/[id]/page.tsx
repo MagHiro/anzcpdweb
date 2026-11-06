@@ -4,6 +4,8 @@ import { getAdminBookingRows, getAdminClassById, getClassSourceOptions, getCateg
 import { AdminClassActions, AdminClassForm } from "@/components/admin-forms";
 import { StatusBadge } from "@/components/ui";
 import { uuidSchema } from "@/lib/validation";
+import { getClassResources } from "@/server/bookings/resources";
+import { ClassResourceManager } from "@/components/class-resource-manager";
 
 export default async function AdminClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,6 +17,7 @@ export default async function AdminClassDetailPage({ params }: { params: Promise
     getAdminBookingRows({ classId: id, page: 1, pageSize: 20 }),
   ]);
   const { sources, selectedIds } = sourceOptions;
+  const resources = await getClassResources(id);
   return <div className="class-detail-editor">
     <Link href="/admin/classes" className="class-back-link focus-ring">← All classes</Link>
     <header className="class-editor-heading">
@@ -26,5 +29,7 @@ export default async function AdminClassDetailPage({ params }: { params: Promise
       <Link href={`/admin/bookings?classId=${encodeURIComponent(id)}`} className="focus-ring">Review {affectedBookings.length === 20 ? "bookings" : `${affectedBookings.length} booking${affectedBookings.length === 1 ? "" : "s"}`} →</Link>
     </aside>}
     <AdminClassForm classRecord={row.class} categories={categories} presenters={presenters} sources={sources} selectedSourceIds={selectedIds} />
+    <Link href={`/admin/classes/${id}/participants`} className="ink-link mt-8 inline-block">View class participants →</Link>
+    <ClassResourceManager classId={id} resources={resources.map(({ id, title, kind, published }) => ({ id, title, kind, published }))} />
   </div>;
 }

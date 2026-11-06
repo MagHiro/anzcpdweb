@@ -64,6 +64,13 @@
       "when": 1793937729894,
       "tag": "0008_glamorous_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793943413700,
+      "tag": "0009_unknown_roland_deschain",
+      "breakpoints": true
     }
   ]
 }
