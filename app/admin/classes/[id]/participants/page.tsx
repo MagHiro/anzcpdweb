@@ -8,6 +8,7 @@ import { formatDateTime } from "@/lib/utils";
 import { getAdminClassById, getAdminReminderRows } from "@/server/catalogue/queries";
 import { AdminParticipantControls } from "@/components/admin-participant-controls";
 import { formatStatusLabel } from "@/components/ui";
+import { AdminClassNav } from "@/components/admin-class-nav";
 
 export default async function ClassParticipantsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,7 +26,8 @@ export default async function ClassParticipantsPage({ params }: { params: Promis
     <Link href="/admin/bookings?view=classes" className="ink-link">← Classes</Link>
     <h1 className="display mt-6 text-4xl text-[var(--forest)]">{activity.title}</h1>
     <p className="mt-3 text-sm text-[var(--muted)]">{formatDateTime(activity.startAt, activity.timezone)} · {activity.timezone}</p>
-    <div className="mt-6 flex flex-wrap gap-5 text-sm"><a href={`/api/admin/bookings/export?classId=${id}`} className="ink-link">Export participants CSV</a><Link href={`/admin/classes/${id}`} className="ink-link">Manage class and resources</Link><Link href={`/admin/bookings?classId=${id}`} className="ink-link">All booking records</Link></div>
+    <AdminClassNav classId={id} current="participants" />
+    <div className="mt-6 flex flex-wrap gap-5 text-sm"><a href={`/api/admin/bookings/export?classId=${id}`} className="ink-link">Export participants CSV</a><Link href={`/admin/bookings?classId=${id}`} className="ink-link">All booking records</Link></div>
     <div className="mt-8 flex flex-wrap justify-between gap-3"><h2 className="display text-2xl text-[var(--forest)]">Participants ({participants.length})</h2><p className="text-sm text-[var(--muted)]">{participants.filter(item => item.attendance === "ATTENDED").length} attended · {participants.filter(item => item.attendance === "ABSENT").length} absent</p></div>
     <p className="mt-2 text-xs text-[var(--muted)]">Confirmed and partially refunded bookings. All participants are listed on this page.</p>
     <div className="mt-5 overflow-x-auto rounded-2xl bg-white"><table className="w-full min-w-[760px] text-left text-sm">

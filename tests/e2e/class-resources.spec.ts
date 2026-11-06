@@ -23,6 +23,9 @@ test("class resources are draft by default and downloads require an active owned
     expect((await page.request.post("/api/auth/login", { headers, data: { email: process.env.ADMIN_TEST_EMAIL, password: process.env.ADMIN_TEST_PASSWORD } })).ok()).toBe(true);
     expect((await customer.post("/api/auth/login", { headers, data: { email, password } })).ok()).toBe(true);
     await page.goto(`/admin/classes/${activity.id}`);
+    await expect(page.getByRole("heading", { name: "Materials and recordings", exact: true })).toHaveCount(0);
+    await page.getByRole("navigation", { name: "Class workspace" }).getByRole("link", { name: "Materials & recordings" }).click();
+    await expect(page).toHaveURL(`/admin/classes/${activity.id}/resources`);
     await page.getByRole("textbox", { name: "Resource title", exact: true }).fill("Workshop notes");
     await page.getByLabel("PDF file (up to 5 MB)").setInputFiles({ name: "notes.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n%%EOF") });
     await page.getByRole("button", { name: "Add draft resource" }).click();
