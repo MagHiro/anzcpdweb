@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const verification = await verifyTurnstile({ token: parsed.data.turnstileToken, remoteIp: ip });
   if (!verification.ok) return NextResponse.json({ error: verification.message }, { status: 400 });
   try {
-    return await auth.api.signInEmail({ body: { email: parsed.data.email, password: parsed.data.password }, headers: request.headers, asResponse: true });
+    return await auth.api.signInEmail({ body: { email: parsed.data.email, password: parsed.data.password, rememberMe: parsed.data.rememberMe }, headers: request.headers, asResponse: true });
   } catch {
     return NextResponse.json({ error: "Sign-in failed. Check your email and password, then try again." }, { status: 401 });
   }

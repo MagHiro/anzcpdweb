@@ -6,8 +6,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Field, FormNotice, TextInput } from "@/components/ui";
 import { Turnstile } from "@/components/turnstile";
+import { LoginForm } from "@/components/login-form";
 
 export function AuthForm({ mode, siteKey, resetToken, redirectTo }: { mode: "login" | "register" | "forgot" | "reset"; siteKey?: string; resetToken?: string; redirectTo?: string }) {
+  if (mode === "login") return <LoginForm siteKey={siteKey} redirectTo={redirectTo} />;
+  return <BaseAuthForm mode={mode} siteKey={siteKey} resetToken={resetToken} redirectTo={redirectTo} />;
+}
+
+function BaseAuthForm({ mode, siteKey, resetToken, redirectTo }: { mode: "login" | "register" | "forgot" | "reset"; siteKey?: string; resetToken?: string; redirectTo?: string }) {
   const router = useRouter();
   const [token, setToken] = useState("");
   const [state, setState] = useState<{ loading: boolean; error?: string; success?: string }>({ loading: false });

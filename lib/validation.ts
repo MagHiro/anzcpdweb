@@ -51,7 +51,8 @@ export const authRegistrationSchema = z.object({
 
 export const authLoginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, "Enter your password."),
+  password: z.string().min(1, "Enter your password.").max(128),
+  rememberMe: z.boolean().default(false),
   turnstileToken: z.string().trim().optional().or(z.literal("")),
 });
 

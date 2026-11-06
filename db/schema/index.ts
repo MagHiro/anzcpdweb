@@ -70,12 +70,23 @@ export const user = pgTable(
     name: text("name").notNull(),
     email: text("email").notNull(),
     emailVerified: boolean("email_verified").notNull().default(false),
+    twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
     image: text("image"),
     role: userRoleEnum("role").notNull().default("CUSTOMER"),
     ...createdUpdated,
   },
   (table) => [uniqueIndex("user_email_unique").on(table.email)],
 );
+
+export const twoFactor = pgTable("two_factor", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  secret: text("secret").notNull(),
+  backupCodes: text("backup_codes").notNull(),
+  verified: boolean("verified").notNull().default(false),
+  failedVerificationCount: integer("failed_verification_count").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+}, table => [index("two_factor_user_idx").on(table.userId)]);
 
 export const session = pgTable(
   "session",

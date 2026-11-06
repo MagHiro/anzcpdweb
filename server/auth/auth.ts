@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { account, session, user, verification } from "@/db/schema";
+import { account, session, user, verification, twoFactor as twoFactorTable } from "@/db/schema";
+import { twoFactor } from "better-auth/plugins";
 import { getDb } from "@/lib/db";
 import { getServerEnv } from "@/lib/env";
 import { queueEmail } from "@/server/email/service";
@@ -12,7 +13,7 @@ const env = getServerEnv();
 export const auth = betterAuth({
   database: drizzleAdapter(getDb(), {
     provider: "pg",
-    schema: { user, session, account, verification },
+    schema: { user, session, account, verification, twoFactor: twoFactorTable },
     transaction: true,
   }),
   baseURL: env.APP_URL,
@@ -29,7 +30,17 @@ export const auth = betterAuth({
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7,
-    updateAge: 60 * 60 * 12,
+    disableSessionRefresh: true,
+  },
+  databaseHooks: {
+    session: { create: { before: async (session, context) => {
+      // Better Auth uses a one-day expiry for rememberMe:false, including
+      // sessions created after a successful second-factor challenge.
+      const shortSession = session.expiresAt.getTime() - Date.now() <= 86400000 + 5000;
+      const previousExpiry = context?.context.session?.session.expiresAt;
+      const expiresAt = previousExpiry ? new Date(Math.min(new Date(previousExpiry).getTime(), session.expiresAt.getTime())) : new Date(Date.now() + (shortSession ? 3600 : 7 * 86400) * 1000);
+      return { data: { ...session, expiresAt } };
+    } } },
   },
   user: {
     additionalFields: {
@@ -61,5 +72,5 @@ export const auth = betterAuth({
       await linkVerifiedEmailBookings(verifiedUser.email, verifiedUser.id);
     },
   },
-  plugins: [nextCookies()],
+  plugins: [twoFactor({ issuer: "ANZ Migration Academy", twoFactorCookieMaxAge: 600 }), nextCookies()],
 });
