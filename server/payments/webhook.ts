@@ -5,8 +5,11 @@ import { getDb } from "@/lib/db";
 import { markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
 import { syncRefundFromStripe } from "@/server/payments/refunds";
 import { shouldProcessWebhook } from "@/server/payments/webhook-policy";
+import { ownsStripeEvent } from "@/server/payments/webhook-ownership";
 
-export async function processStripeEvent(event: Stripe.Event): Promise<{ duplicate: boolean }> {
+export async function processStripeEvent(event: Stripe.Event): Promise<{ duplicate: boolean; ignored?: boolean }> {
+  // Do not claim, persist, or mutate events belonging to another integration.
+  if (!await ownsStripeEvent(event)) return { duplicate: false, ignored: true };
   const db = getDb();
   await db.insert(webhookEvents).values({ stripeEventId: event.id, type: event.type, payload: event.data.object as unknown as Record<string, unknown>, status: "RECEIVED" }).onConflictDoNothing({ target: webhookEvents.stripeEventId });
   const processingLeaseExpiredAt = new Date(Date.now() - 5 * 60 * 1000);

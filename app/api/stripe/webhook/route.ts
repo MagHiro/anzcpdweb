@@ -18,8 +18,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid webhook signature." }, { status: 400 });
   }
   try {
-    await processStripeEvent(event);
-    return NextResponse.json({ received: true });
+    const result = await processStripeEvent(event);
+    return NextResponse.json({ received: true, handled: !result.ignored, ...(result.ignored ? { reason: "ignored" } : {}) });
   } catch {
     return NextResponse.json({ error: "Webhook processing failed and will be retried." }, { status: 500 });
   }

@@ -1,5 +1,11 @@
 # Security maintenance
 
+## Shared Stripe account
+
+- New Checkout sessions, payment intents, and application-created refunds carry `integration_type=anzcpdweb`. The signed webhook ignores other integrations and unsupported event types with HTTP 200 before storing or processing them.
+- Historical objects without an integration tag require a matching local booking, checkout, payment intent, or refund reference. Dashboard refunds are attributed by their local payment intent. Invalid UUID metadata is never used directly in UUID database comparisons.
+- Signature verification remains mandatory. Owned processing failures and ownership database lookup failures still return HTTP 500 for Stripe retries; unrelated events do not create webhook records or trigger refund API requests.
+
 ## Class resources
 
 - PDF materials are stored outside `public` on the persistent `private-resources` volume. Back up this volume alongside the database; database backups alone do not include PDF content.

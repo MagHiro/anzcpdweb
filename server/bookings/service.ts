@@ -8,6 +8,7 @@ import { formatDateTime, formatMoney, makePublicBookingReference } from "@/lib/u
 import { createAccountToken } from "@/server/auth/tokens";
 import { queueEmail } from "@/server/email/service";
 import { getStripe } from "@/server/payments/stripe";
+import { stripeIntegrationMetadata } from "@/server/payments/integration";
 import { assertBookingTransition } from "@/server/bookings/transitions";
 import { enqueuePaymentReceipt } from "@/server/payments/receipts";
 
@@ -195,8 +196,8 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
         ],
         customer_email: created.email,
         client_reference_id: created.id,
-        metadata: { bookingId: created.id, classId: created.classId },
-        payment_intent_data: { metadata: { bookingId: created.id, classId: created.classId } },
+        metadata: { ...stripeIntegrationMetadata, bookingId: created.id, classId: created.classId },
+        payment_intent_data: { metadata: { ...stripeIntegrationMetadata, bookingId: created.id, classId: created.classId } },
         success_url: `${env.APP_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${env.APP_URL}/booking/cancelled?booking=${created.id}`,
         expires_at: Math.floor((created.seatReservationExpiresAt ?? new Date(Date.now() + 31 * 60 * 1000)).getTime() / 1000),

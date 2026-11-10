@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { formatMoney, makePublicBookingReference } from "@/lib/utils";
 import { getServerEnv } from "@/lib/env";
 import { getStripe } from "@/server/payments/stripe";
+import { stripeIntegrationMetadata } from "@/server/payments/integration";
 import { queueEmail } from "@/server/email/service";
 import { assertBookingTransition } from "@/server/bookings/transitions";
 import { remainingRefundableAmount } from "@/server/payments/refund-policy";
@@ -52,7 +53,7 @@ export async function createAdminRefund(input: { bookingId: string; amount: numb
 
   let stripeRefund: Stripe.Refund;
   try {
-    stripeRefund = await getStripe().refunds.create({ payment_intent: pending.paymentIntentId, amount: pending.refund.amount, reason: "requested_by_customer", metadata: { bookingId: pending.refund.bookingId, localRefundId: pending.refund.id } }, { idempotencyKey: `refund:${input.idempotencyKey}` });
+    stripeRefund = await getStripe().refunds.create({ payment_intent: pending.paymentIntentId, amount: pending.refund.amount, reason: "requested_by_customer", metadata: { ...stripeIntegrationMetadata, bookingId: pending.refund.bookingId, localRefundId: pending.refund.id } }, { idempotencyKey: `refund:${input.idempotencyKey}` });
   } catch (error) {
     const statusCode = typeof error === "object" && error !== null && "statusCode" in error ? Number((error as { statusCode?: unknown }).statusCode) : undefined;
     const definitelyRejected = [400, 401, 402, 404, 409, 422].includes(statusCode ?? -1);
