@@ -89,11 +89,12 @@ export function TimezoneSelector({ timezone, label = "Display timezone", ignoreC
   </span>;
 }
 
-export function VisitorTime({ startAt, endAt, timezone, allowConversion = false, showSelector = false }: { startAt: string; endAt?: string; timezone: string; allowConversion?: boolean; showSelector?: boolean }) {
+export function VisitorTime({ startAt, endAt, timezone, allowConversion = false, showSelector = false, compact = false }: { startAt: string; endAt?: string; timezone: string; allowConversion?: boolean; showSelector?: boolean; compact?: boolean }) {
   const context = useContext(TimezoneContext);
   const selected = useSyncExternalStore(subscribe, displayTimezone, () => timezone);
   const online = context?.online ?? allowConversion;
   const localZone = online ? selected : timezone;
   const format = (value: string, zone: string) => new Intl.DateTimeFormat("en-AU", { timeZone: zone, dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  if (compact) return <time dateTime={startAt} title={`Timezone: ${localZone}`}>{format(startAt, localZone)} ({localZone.split("/").pop()?.replaceAll("_", " ")})</time>;
   return <span className="block"><time dateTime={startAt}>{format(startAt, localZone)}</time>{endAt && <span className="block">to <time dateTime={endAt}>{format(endAt, localZone)}</time></span>}<span className="mt-1 block text-xs font-normal text-[var(--muted)]">{online ? "Timezone" : "Venue timezone"}: {localZone}</span>{online && showSelector && <TimezoneSelector timezone={timezone} />}</span>;
 }

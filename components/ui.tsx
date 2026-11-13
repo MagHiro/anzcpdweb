@@ -120,27 +120,30 @@ export type ActivityCardItem = { slug: string; title: string; shortDescription: 
 
 export function ActivityCard({ item }: { item: ActivityCardItem }) {
   const cpd = getCpdLabel(item.cpdUnitType, item.cpdUnitAmount);
-  const date = <VisitorTime startAt={new Date(item.startAt).toISOString()} timezone={item.timezone} allowConversion={item.deliveryFormat === "ONLINE"} />;
+  const date = <VisitorTime startAt={new Date(item.startAt).toISOString()} timezone={item.timezone} allowConversion={item.deliveryFormat === "ONLINE"} compact />;
   return <article className="card-lift activity-card group flex h-full min-w-0 flex-col">
-    <div className="flex items-center justify-between gap-4 px-6 pt-6">
-      <span className="text-xs font-semibold tracking-[.04em] text-[var(--fern)]">{getCountryConfig(item.country).name}</span>
-      <span className="rounded-full bg-[var(--mist)] px-3 py-1 text-xs text-[var(--muted)]">{formatStatusLabel(item.deliveryFormat)}</span>
+    <div className="px-6 pt-6">
+      <span className="text-xs font-medium uppercase tracking-[.04em] text-[var(--fern)]">{getCountryConfig(item.country).name}</span>
     </div>
-    <div className="flex flex-1 flex-col px-6 pb-6 pt-6">
+    <div className="flex flex-1 flex-col px-6 pb-6 pt-4">
       <h3 className="activity-card-title md:min-h-[60px]"><Link href={`/classes/${item.slug}`} className="focus-ring rounded-sm underline-offset-4 group-hover:underline">{item.title}</Link></h3>
       <p className="mt-3 line-clamp-2 text-[15px] leading-6 text-[var(--muted)] md:min-h-12">{item.shortDescription}</p>
-      <p className="mt-3 min-h-4 text-xs text-[var(--muted)]">{item.presenterName && <>With <span className="font-medium text-[var(--ink)]">{item.presenterName}</span></>}</p>
-      <dl className="mt-auto grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-5 gap-y-3 pt-5 text-sm">
-        <div><dt className="text-xs text-[var(--muted)]">Date & time</dt><dd className="mt-2 font-medium leading-6">{date}</dd></div>
-        <div><dt className="text-xs text-[var(--muted)]">CPD</dt><dd className="mt-2 font-medium leading-6">{cpd ?? "Not specified"}{item.cpdActivityCategory && <span className="mt-1 block text-xs font-normal text-[var(--muted)]">{item.cpdActivityCategory}</span>}</dd></div>
-        <div className="col-span-2 flex min-w-0 items-baseline gap-3"><dt className="shrink-0 text-xs text-[var(--muted)]">Location</dt><dd className="break-words font-medium leading-6">{item.deliveryFormat === "ONLINE" ? "Online" : <>{item.venueName?.trim() || item.venueAddress?.trim() || "Venue to be confirmed"}{item.venueName?.trim() && item.venueAddress?.trim() && <span className="mt-1 block text-xs font-normal text-[var(--muted)]">{item.venueAddress}</span>}{item.deliveryFormat === "HYBRID" && <span className="mt-1 block text-xs font-normal text-[var(--muted)]">Online attendance also available</span>}</>}</dd></div>
+      <dl className="mt-5 grid gap-4 text-sm leading-6">
+        <div className="flex items-start gap-3"><dt><ActivityDetailIcon kind="calendar" /><span className="sr-only">Date & time</span></dt><dd>{date}</dd></div>
+        <div className="flex items-start gap-3"><dt><ActivityDetailIcon kind="location" /><span className="sr-only">Location</span></dt><dd className="min-w-0 break-words">Location: <span className="font-medium">{item.deliveryFormat === "ONLINE" ? "Online" : item.venueName?.trim() || item.venueAddress?.trim() || "Venue to be confirmed"}</span>{item.deliveryFormat !== "ONLINE" && item.venueName?.trim() && item.venueAddress?.trim() && <span className="block text-xs text-[var(--muted)]">{item.venueAddress}</span>}{item.deliveryFormat === "HYBRID" && <span className="block text-xs text-[var(--muted)]">Online attendance also available</span>}</dd></div>
+        <div className="flex items-start gap-3"><dt><ActivityDetailIcon kind="clock" /><span className="sr-only">CPD</span></dt><dd>{cpd ?? "CPD not specified"}{item.cpdActivityCategory ? ` · ${item.cpdActivityCategory}` : ""}</dd></div>
+        {item.presenterName && <div className="flex items-start gap-3"><dt><ActivityDetailIcon kind="person" /><span className="sr-only">Presenter</span></dt><dd>{item.presenterName}</dd></div>}
       </dl>
-      <div className="pt-5"><div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="mt-auto pt-6"><div className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--line)] pt-5">
         <div><p className="text-xl text-[var(--forest)]"><Price amount={item.priceMinorUnits} currency={item.currency} /></p>{item.remainingSeats !== null && <p className="mt-1 text-xs text-[var(--muted)]">{item.remainingSeats === 0 ? "Sold out" : `${item.remainingSeats} places available`}</p>}</div>
          <LinkButton href={`/classes/${item.slug}`} size="sm" aria-label={`View details: ${item.title}`}>View details ↗</LinkButton>
       </div></div>
     </div>
   </article>;
+}
+
+function ActivityDetailIcon({ kind }: { kind: "calendar" | "location" | "clock" | "person" }) {
+  return <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-[var(--muted)]">{kind === "calendar" ? <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 11h18M8 15h2m4 0h2m-8 3h2" /></> : kind === "location" ? <><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></> : kind === "clock" ? <><circle cx="12" cy="12" r="9" /><path d="M12 7v5h4" /></> : <><circle cx="12" cy="7" r="4" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></>}</svg>;
 }
 
 export function ClassCard({ item }: { item: ActivityCardItem }) {
