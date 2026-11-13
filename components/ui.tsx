@@ -116,7 +116,7 @@ export function FormNotice({ children, tone = "error", className }: { children?:
 
 export function Price({ amount, currency }: { amount: number; currency: string }) { return <span className="data-numeric font-bold tracking-[-.03em]">{formatMoney(amount, currency)}</span>; }
 
-export type ActivityCardItem = { slug: string; title: string; shortDescription: string; country: CountryCode; categoryName: string; presenterName?: string | null; cpdActivityCategory?: string | null; startAt: Date; timezone: string; deliveryFormat: string; priceMinorUnits: number; currency: string; remainingSeats: number | null; cpdUnitType: string; cpdUnitAmount: string | null };
+export type ActivityCardItem = { slug: string; title: string; shortDescription: string; country: CountryCode; categoryName: string; presenterName?: string | null; cpdActivityCategory?: string | null; startAt: Date; timezone: string; deliveryFormat: string; venueName?: string | null; venueAddress?: string | null; priceMinorUnits: number; currency: string; remainingSeats: number | null; cpdUnitType: string; cpdUnitAmount: string | null };
 
 export function ActivityCard({ item }: { item: ActivityCardItem }) {
   const cpd = getCpdLabel(item.cpdUnitType, item.cpdUnitAmount);
@@ -127,14 +127,15 @@ export function ActivityCard({ item }: { item: ActivityCardItem }) {
       <span className="rounded-full bg-[var(--mist)] px-3 py-1 text-xs text-[var(--muted)]">{formatStatusLabel(item.deliveryFormat)}</span>
     </div>
     <div className="flex flex-1 flex-col px-6 pb-6 pt-6">
-      <h3 className="activity-card-title"><Link href={`/classes/${item.slug}`} className="focus-ring rounded-sm underline-offset-4 group-hover:underline">{item.title}</Link></h3>
-      <p className="mt-3 line-clamp-2 text-[15px] leading-6 text-[var(--muted)]">{item.shortDescription}</p>
-      {item.presenterName && <p className="mt-4 text-xs text-[var(--muted)]">With <span className="font-medium text-[var(--ink)]">{item.presenterName}</span></p>}
-      <dl className="mt-6 grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-5 rounded-2xl bg-[var(--mist)] p-4 text-sm">
+      <h3 className="activity-card-title md:min-h-[60px]"><Link href={`/classes/${item.slug}`} className="focus-ring rounded-sm underline-offset-4 group-hover:underline">{item.title}</Link></h3>
+      <p className="mt-3 line-clamp-2 text-[15px] leading-6 text-[var(--muted)] md:min-h-12">{item.shortDescription}</p>
+      <p className="mt-3 min-h-4 text-xs text-[var(--muted)]">{item.presenterName && <>With <span className="font-medium text-[var(--ink)]">{item.presenterName}</span></>}</p>
+      <dl className="mt-auto grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-5 gap-y-3 pt-5 text-sm">
         <div><dt className="text-xs text-[var(--muted)]">Date & time</dt><dd className="mt-2 font-medium leading-6">{date}</dd></div>
         <div><dt className="text-xs text-[var(--muted)]">CPD</dt><dd className="mt-2 font-medium leading-6">{cpd ?? "Not specified"}{item.cpdActivityCategory && <span className="mt-1 block text-xs font-normal text-[var(--muted)]">{item.cpdActivityCategory}</span>}</dd></div>
+        <div className="col-span-2 flex min-w-0 items-baseline gap-3"><dt className="shrink-0 text-xs text-[var(--muted)]">Location</dt><dd className="break-words font-medium leading-6">{item.deliveryFormat === "ONLINE" ? "Online" : <>{item.venueName?.trim() || item.venueAddress?.trim() || "Venue to be confirmed"}{item.venueName?.trim() && item.venueAddress?.trim() && <span className="mt-1 block text-xs font-normal text-[var(--muted)]">{item.venueAddress}</span>}{item.deliveryFormat === "HYBRID" && <span className="mt-1 block text-xs font-normal text-[var(--muted)]">Online attendance also available</span>}</>}</dd></div>
       </dl>
-      <div className="mt-auto pt-6"><div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="pt-5"><div className="flex flex-wrap items-center justify-between gap-4">
         <div><p className="text-xl text-[var(--forest)]"><Price amount={item.priceMinorUnits} currency={item.currency} /></p>{item.remainingSeats !== null && <p className="mt-1 text-xs text-[var(--muted)]">{item.remainingSeats === 0 ? "Sold out" : `${item.remainingSeats} places available`}</p>}</div>
          <LinkButton href={`/classes/${item.slug}`} size="sm" aria-label={`View details: ${item.title}`}>View details ↗</LinkButton>
       </div></div>
