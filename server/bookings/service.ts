@@ -351,6 +351,7 @@ async function enqueueBookingFulfilmentEmails(booking: typeof bookings.$inferSel
       bookingReference: reference,
       classTitle: booking.classTitleSnapshot,
       classDate: formatDateTime(activity.startAt, booking.timezoneSnapshot),
+      classTimezone: booking.timezoneSnapshot,
       meetingLink: activity.meetingLink ?? undefined,
       detailUrl: guestAccessToken ? `${env.APP_URL}/booking/confirmation?token=${encodeURIComponent(guestAccessToken)}` : `${env.APP_URL}/account/bookings/${booking.id}`,
       amount: formatMoney(booking.amountSnapshot, booking.currencySnapshot),

@@ -36,6 +36,7 @@ export type EmailMessage =
       bookingReference: string;
       classTitle: string;
       classDate: string;
+      classTimezone?: string;
       meetingLink?: string;
       detailUrl: string;
       amount: string;

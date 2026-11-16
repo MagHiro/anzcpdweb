@@ -16,6 +16,14 @@ const messages: EmailMessage[] = [
 ];
 
 describe("React Email templates", () => {
+  it.each(["Pacific/Auckland", "Australia/Sydney", "Australia/Perth"])("includes the event timezone %s in confirmation HTML and plain text", async classTimezone => {
+    const confirmation = messages[5];
+    if (confirmation.type !== "BOOKING_CONFIRMATION") throw new Error("Expected confirmation");
+    const result = await renderMessage({ ...confirmation, classDate: "17 Nov 2026, 11:00 am", classTimezone });
+    const dateWithTimezone = `17 Nov 2026, 11:00 am (${classTimezone})`;
+    expect(result.html.replace(/<!--.*?-->/g, "")).toContain(dateWithTimezone);
+    expect(result.text).toContain(dateWithTimezone);
+  });
   it("includes the optional meeting link with class details only when provided", async () => {
     const confirmation = messages[5];
     if (confirmation.type !== "BOOKING_CONFIRMATION") throw new Error("Expected confirmation");
