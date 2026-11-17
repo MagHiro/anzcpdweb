@@ -7,6 +7,7 @@ import { bookings, classResources, emailOutbox, paymentReceipts } from "@/db/sch
 import type { ClassEmailMessage } from "./class-email";
 import { resourceTemplateReady } from "./class-email";
 import { resourceReadiness } from "./resource-readiness";
+import { materialAttachments } from "./resource-attachments";
 import { renderReceiptPdf } from "@/server/payments/receipt-pdf";
 import { renderMessage } from "./render";
 import { refreshEventReminder, type EventReminderMessage } from "./reminders";
@@ -119,6 +120,10 @@ function emailDedupeKey(message: EmailMessage): string {
 }
 
 export async function receiptEmailAttachments(message: EmailMessage): Promise<Array<{ filename: string; content: Buffer; contentType: string }>> {
+  if (message.type === "RESOURCE_SHARE" && message.template !== "RECORDING") {
+    const resources = await getDb().select().from(classResources).where(eq(classResources.classId, message.classId));
+    return materialAttachments(resources);
+  }
   if (message.type !== "PAYMENT_RECEIPT") return [];
   // Older queued messages have the receipt number but not receiptId.
   const id = message.receiptId;

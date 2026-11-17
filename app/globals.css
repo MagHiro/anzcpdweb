@@ -309,6 +309,10 @@ input, select, textarea { font: inherit; }
 .feature-row-link:hover { color: var(--fern); }
 .icon-pill { display: grid; width: 48px; height: 48px; place-items: center; color: var(--forest); }
 .ink-link { display: inline-flex; align-items: center; gap: 12px; font-size: .875rem; font-weight: 500; text-decoration: underline; text-underline-offset: 5px; color: var(--forest); }
+.resource-upload-form { grid-template-columns: minmax(0, 1fr) minmax(200px, .6fr); max-width: 960px; }
+.resource-upload-form > :nth-child(n+3) { grid-column: 1 / -1; }
+.class-resource-panel li > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .resource-upload-form { grid-template-columns: minmax(0, 1fr); } }
 .country-hero { background: var(--paper); color: var(--ink); }
 .country-hero h1 { color: var(--forest); }
 .country-hero p { color: var(--muted); }
