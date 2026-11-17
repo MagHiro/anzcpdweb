@@ -27,7 +27,7 @@ it("rejects invalid requests and rate limited sends", async () => {
 });
 it("queues each unique recipient and audit record atomically", async () => {
   const inserts: unknown[] = [];
-  const results = [[{ title: "Class" }], [], [], [{ email: "a@example.com", fullName: "Alex A" }, { email: "A@example.com", fullName: "Alex A" }]];
+  const results = [[{ title: "Class", startAt: new Date("2026-11-17T03:00:00Z"), endAt: new Date("2026-11-17T05:00:00Z"), timezone: "Australia/Perth", deliveryFormat: "ONLINE", meetingLink: "https://zoom.us/j/123" }], [], [], [{ email: "a@example.com", fullName: "Alex A" }, { email: "A@example.com", fullName: "Alex A" }]];
   mocks.transaction.mockImplementation(async callback => {
     const chain = { from: () => chain, where: () => chain, for: () => chain, limit: () => Promise.resolve(results.shift()), then: (resolve: (value: unknown) => unknown) => Promise.resolve(results.shift()).then(resolve) };
     return callback({ select: () => chain, insert: () => ({ values: async (value: unknown) => { inserts.push(value); } }) });

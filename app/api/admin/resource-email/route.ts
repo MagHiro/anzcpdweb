@@ -7,6 +7,7 @@ import { classEmailSchema, resourceTemplateReady, uniqueClassRecipients, type Cl
 import { resourceReadiness } from "@/server/email/resource-readiness";
 import { getServerEnv } from "@/lib/env";
 import { consumeRateLimit } from "@/server/security/rate-limit";
+import { resourceEventDetails } from "@/server/email/resource-event";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return Response.json({ error: "Request origin not allowed." }, { status: 403 });
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
       if (!recipients.length) return { error: "This class has no active participants.", status: 400 };
       for (let offset = 0; offset < recipients.length; offset += 100) {
         await tx.insert(emailOutbox).values(recipients.slice(offset, offset + 100).map(recipient => {
-          const payload: ClassEmailMessage = { type: "RESOURCE_SHARE", ...data, ...recipient, classTitle: activity.title, url: `${getServerEnv().APP_URL}/account/bookings` };
+          const payload: ClassEmailMessage = { type: "RESOURCE_SHARE", ...data, ...recipient, ...resourceEventDetails(activity), url: `${getServerEnv().APP_URL}/account/bookings` };
           return { dedupeKey: `resource-share:${data.campaignId}:${recipient.email}`, messageType: payload.type, recipientEmail: recipient.email, payload };
         }));
       }

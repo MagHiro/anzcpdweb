@@ -21,6 +21,10 @@ export type ClassEmailMessage = {
   name: string;
   template: ResourceTemplate;
   url: string;
+  eventDate?: string;
+  eventLocation?: string;
+  meetingLink?: string;
+  attendanceInfo?: string;
 };
 
 export function uniqueClassRecipients<T extends { email: string; fullName: string }>(participants: T[]) {

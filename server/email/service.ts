@@ -3,7 +3,8 @@ import nodemailer, { type Transporter } from "nodemailer";
 import { and, asc, eq, inArray, lte, lt, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getServerEnv, resolveEmailProvider, type ServerEnv } from "@/lib/env";
-import { bookings, classResources, emailOutbox, paymentReceipts } from "@/db/schema";
+import { bookings, classes, classResources, emailOutbox, paymentReceipts } from "@/db/schema";
+import { resourceEventDetails } from "./resource-event";
 import type { ClassEmailMessage } from "./class-email";
 import { resourceTemplateReady } from "./class-email";
 import { resourceReadiness } from "./resource-readiness";
@@ -207,6 +208,9 @@ export async function processEmailOutbox(limit = 20): Promise<{ sent: number; fa
         continue;
       }
       if (message.type === "RESOURCE_SHARE") {
+        const [activity] = await db.select().from(classes).where(eq(classes.id, message.classId)).limit(1);
+        if (!activity) throw new Error("Resource email class not found.");
+        message = { ...message, ...resourceEventDetails(activity) };
         const resources = await db.select().from(classResources).where(eq(classResources.classId, message.classId));
         if (!resourceTemplateReady(message.template, await resourceReadiness(resources))) throw new Error("Required published resources are not ready. Publish the resources to resume delivery.");
         const [participant] = await db.select({ id: bookings.id }).from(bookings).where(and(
