@@ -10,11 +10,12 @@ import PaymentReceipt from "../../emails/payment-receipt";
 import RefundStatus from "../../emails/refund-status";
 import EventReminder from "../../emails/event-reminder";
 import ClassEmail from "../../emails/class-email";
+import { resourceTemplateLabels } from "./class-email";
 
 export async function renderMessage(message: EmailMessage) {
   const content = (() => {
     switch (message.type) {
-      case "CLASS_EMAIL": return { subject: message.subject, element: <ClassEmail {...message} /> };
+      case "RESOURCE_SHARE": return { subject: `${resourceTemplateLabels[message.template]} ready: ${message.classTitle}`, element: <ClassEmail {...message} /> };
       case "EVENT_REMINDER": return { subject: `Reminder: ${message.classTitle} — ${message.daysBefore === 1 ? "tomorrow" : "in 3 days"}`, element: <EventReminder {...message} /> };
       case "EMAIL_VERIFICATION": return { subject: "Verify your email address | ANZ Migration Academy", element: <EmailVerification {...message} /> };
       case "PASSWORD_RESET": return { subject: "Reset your password | ANZ Migration Academy", element: <PasswordReset {...message} /> };

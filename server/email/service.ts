@@ -3,8 +3,10 @@ import nodemailer, { type Transporter } from "nodemailer";
 import { and, asc, eq, inArray, lte, lt, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getServerEnv, resolveEmailProvider, type ServerEnv } from "@/lib/env";
-import { bookings, emailOutbox, paymentReceipts } from "@/db/schema";
+import { bookings, classResources, emailOutbox, paymentReceipts } from "@/db/schema";
 import type { ClassEmailMessage } from "./class-email";
+import { resourceTemplateReady } from "./class-email";
+import { resourceReadiness } from "./resource-readiness";
 import { renderReceiptPdf } from "@/server/payments/receipt-pdf";
 import { renderMessage } from "./render";
 import { refreshEventReminder, type EventReminderMessage } from "./reminders";
@@ -105,7 +107,7 @@ export async function queueEmail(message: EmailMessage, dedupeKey?: string): Pro
 }
 
 function emailDedupeKey(message: EmailMessage): string {
-  if (message.type === "CLASS_EMAIL") return `class-email:${message.campaignId}:${message.email.toLowerCase()}`;
+  if (message.type === "RESOURCE_SHARE") return `resource-share:${message.campaignId}:${message.email.toLowerCase()}`;
   if (message.type === "EVENT_REMINDER") return `event-reminder:${message.bookingId}:${message.eventStartAt}:${message.daysBefore}`;
   if (message.type === "PAYMENT_RECEIPT") return `payment-receipt:${message.receiptNumber}`;
   if (message.type === "BOOKING_CONFIRMATION") return `booking-confirmation:${message.bookingReference}`;
@@ -194,7 +196,14 @@ export async function processEmailOutbox(limit = 20): Promise<{ sent: number; fa
 
     try {
       let message = row.payload as EmailMessage;
-      if (message.type === "CLASS_EMAIL") {
+      // Retire any unsent free-form campaigns along with the removed composer.
+      if (row.messageType === "CLASS_EMAIL") {
+        await db.delete(emailOutbox).where(eq(emailOutbox.id, row.id));
+        continue;
+      }
+      if (message.type === "RESOURCE_SHARE") {
+        const resources = await db.select().from(classResources).where(eq(classResources.classId, message.classId));
+        if (!resourceTemplateReady(message.template, await resourceReadiness(resources))) throw new Error("Required published resources are not ready. Publish the resources to resume delivery.");
         const [participant] = await db.select({ id: bookings.id }).from(bookings).where(and(
           eq(bookings.classId, message.classId),
           sql`lower(trim(${bookings.email})) = ${message.email.toLowerCase()}`,

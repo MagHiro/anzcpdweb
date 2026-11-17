@@ -9,8 +9,6 @@ import { getAdminClassById, getAdminReminderRows } from "@/server/catalogue/quer
 import { AdminParticipantControls } from "@/components/admin-participant-controls";
 import { formatStatusLabel } from "@/components/ui";
 import { AdminClassNav } from "@/components/admin-class-nav";
-import { AdminClassEmail } from "@/components/admin-class-email";
-import { uniqueClassRecipients } from "@/server/email/class-email";
 
 export default async function ClassParticipantsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,7 +28,6 @@ export default async function ClassParticipantsPage({ params }: { params: Promis
     <p className="mt-3 text-sm text-[var(--muted)]">{formatDateTime(activity.startAt, activity.timezone)} · {activity.timezone}</p>
     <AdminClassNav classId={id} current="participants" />
     <div className="mt-6 flex flex-wrap gap-5 text-sm"><a href={`/api/admin/bookings/export?classId=${id}`} className="ink-link">Export participants CSV</a><Link href={`/admin/bookings?classId=${id}`} className="ink-link">All booking records</Link></div>
-    <AdminClassEmail classId={id} recipientCount={uniqueClassRecipients(participants).length} />
     <div className="mt-8 flex flex-wrap items-baseline justify-between gap-3"><h2 className="display text-2xl text-[var(--forest)]">Participants ({participants.length})</h2><p className="text-sm text-[var(--muted)]">{participants.filter(item => item.attendance === "ATTENDED").length} attended · {participants.filter(item => item.attendance === "ABSENT").length} absent</p></div>
     <p className="mt-2 text-xs text-[var(--muted)]">Confirmed and partially refunded bookings. All participants are listed on this page.</p>
     <div className="mt-5 overflow-x-auto rounded-2xl bg-white"><table className="admin-booking-table w-full min-w-[900px] text-left text-sm">
