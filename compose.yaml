@@ -91,6 +91,8 @@ services:
       migrate:
         condition: service_completed_successfully
     command: ["sh", "-c", "while :; do node_modules/.bin/tsx scripts/process-email-outbox.ts; sleep 30; done"]
+    volumes:
+      - private-resources:/app/private/resources:ro
     restart: unless-stopped
     init: true
     stop_grace_period: 10s
