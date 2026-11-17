@@ -20,7 +20,7 @@ export function AdminParticipantControls({ bookingId, attendance, started, remin
     } catch (error) { setError(error instanceof Error ? error.message : "Update failed."); }
     finally { setBusy(false); }
   }
-  return <div className="min-w-40 space-y-2">
+  return <div className="admin-participant-controls min-w-40 space-y-2">
     {started ? <select aria-label="Attendance" value={attendance} disabled={busy} onChange={event => update({ action: "attendance", attendance: event.target.value })} className="focus-ring min-h-10 w-full rounded-xl bg-[var(--mist)] px-3 text-sm"><option value="NOT_RECORDED">Not recorded</option><option value="ATTENDED">Attended</option><option value="ABSENT">Absent</option></select> : <span className="block text-xs text-[var(--muted)]">Attendance opens at class start</span>}
     {reminderDays && <button type="button" disabled={busy} onClick={() => { if (window.confirm(`Resend the ${reminderDays}-day reminder to this participant now?`)) void update({ action: "reminder", daysBefore: reminderDays }); }} className="focus-ring text-xs underline underline-offset-4">Resend {reminderDays}-day reminder</button>}
     <FormNotice>{error}</FormNotice><FormNotice tone="success">{success}</FormNotice>

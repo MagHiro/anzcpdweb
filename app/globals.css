@@ -703,6 +703,24 @@ dialog::backdrop { background: #152a2260; }
 .workspace form[method="get"] > select { flex: 0 1 200px; width: auto; min-width: 0; }
 .workspace form[method="get"] > :is(button, a) { flex: none; }
 .workspace form[method="get"] :is(input, select, button) { min-height: 48px; border-radius: var(--radius-control); }
+/* Closed record filters stay compact even when a class title is long. */
+.workspace form[method="get"] > select { height: 48px; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.workspace form.admin-booking-filters > select[name="classId"] { flex: 1 1 420px; }
+.workspace form.admin-booking-filters > input:not([type="hidden"]) { flex: 1 1 280px; }
+.workspace form.admin-booking-filters > select[name="status"] { flex: 0 0 190px; }
+.workspace form.admin-booking-filters > :is(button, a) { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; white-space: nowrap; }
+.admin-booking-summary { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: 20px 32px; }
+.admin-booking-summary > .min-w-0 { flex: 1 1 480px; }
+.admin-booking-summary h2 { overflow-wrap: anywhere; }
+.admin-booking-summary > :last-child { padding-top: 4px; }
+.workspace-admin .admin-booking-table td { vertical-align: top; padding-block: 20px; }
+.admin-booking-table :is(th, td)[data-label="Amount"], .admin-booking-table td[data-label="Booked"] { white-space: nowrap; }
+.admin-booking-table td:first-child { overflow-wrap: anywhere; }
+.admin-booking-table td[data-label="Reminders"] { min-width: 190px; }
+.admin-booking-table td[data-label="Attendance / actions"] { width: 240px; min-width: 220px; }
+.admin-participant-controls > select { height: 44px; }
+.workspace-admin .admin-participant-controls > button { min-height: 36px; padding: 8px 12px; border-radius: 10px; background: var(--mist); color: var(--forest); font-weight: 500; text-decoration: none; }
+.workspace-admin .admin-participant-controls > button:hover { background: var(--mint); }
 @media (min-width: 901px) {
   .workspace form[method="get"] { flex-wrap: nowrap; }
   .workspace form[method="get"] > select { flex-shrink: 1; }
@@ -740,6 +758,7 @@ dialog::backdrop { background: #152a2260; }
   .workspace-topbar, .workspace-footer { padding: 18px 20px; }
 }
 @media (max-width: 640px) {
+  .workspace form.admin-booking-filters > select[name] { flex-basis: 100%; width: 100%; }
   .workspace form[method="get"] > input:not([type="hidden"]), .workspace form[method="get"] > select { flex-basis: 100%; width: 100%; }
   .booking-card { padding: 20px; }
   .workspace .booking-card-title { font-size: 20px; line-height: 28px; }
@@ -768,6 +787,7 @@ dialog::backdrop { background: #152a2260; }
   .workspace td[data-label] { display: grid; grid-template-columns: 90px minmax(0, 1fr); align-items: start; gap: 10px; padding: 8px 16px; text-align: left; overflow-wrap: anywhere; }
   .workspace td[data-label]::before { content: attr(data-label); font-size: .7rem; color: var(--muted); }
   .workspace td[data-label] > * { grid-column: 2; }
+  .workspace .admin-booking-table td[data-label] { width: auto; min-width: 0; white-space: normal; }
   .workspace form input, .workspace form select { min-width: 0; }
 }
 @media (prefers-reduced-motion: reduce) {

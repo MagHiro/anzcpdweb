@@ -1,9 +1,10 @@
 import { Resend } from "resend";
 import nodemailer, { type Transporter } from "nodemailer";
-import { and, asc, eq, lte, lt, or } from "drizzle-orm";
+import { and, asc, eq, inArray, lte, lt, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { getServerEnv, resolveEmailProvider, type ServerEnv } from "@/lib/env";
-import { emailOutbox, paymentReceipts } from "@/db/schema";
+import { bookings, emailOutbox, paymentReceipts } from "@/db/schema";
+import type { ClassEmailMessage } from "./class-email";
 import { renderReceiptPdf } from "@/server/payments/receipt-pdf";
 import { renderMessage } from "./render";
 import { refreshEventReminder, type EventReminderMessage } from "./reminders";
@@ -11,6 +12,7 @@ import { refreshEventReminder, type EventReminderMessage } from "./reminders";
 let smtpTransporter: Transporter | undefined;
 
 export type EmailMessage =
+  | ClassEmailMessage
   | EventReminderMessage
   | {
       type: "PAYMENT_RECEIPT";
@@ -103,6 +105,7 @@ export async function queueEmail(message: EmailMessage, dedupeKey?: string): Pro
 }
 
 function emailDedupeKey(message: EmailMessage): string {
+  if (message.type === "CLASS_EMAIL") return `class-email:${message.campaignId}:${message.email.toLowerCase()}`;
   if (message.type === "EVENT_REMINDER") return `event-reminder:${message.bookingId}:${message.eventStartAt}:${message.daysBefore}`;
   if (message.type === "PAYMENT_RECEIPT") return `payment-receipt:${message.receiptNumber}`;
   if (message.type === "BOOKING_CONFIRMATION") return `booking-confirmation:${message.bookingReference}`;
@@ -191,6 +194,17 @@ export async function processEmailOutbox(limit = 20): Promise<{ sent: number; fa
 
     try {
       let message = row.payload as EmailMessage;
+      if (message.type === "CLASS_EMAIL") {
+        const [participant] = await db.select({ id: bookings.id }).from(bookings).where(and(
+          eq(bookings.classId, message.classId),
+          sql`lower(trim(${bookings.email})) = ${message.email.toLowerCase()}`,
+          inArray(bookings.status, ["CONFIRMED", "PARTIALLY_REFUNDED"]),
+        )).limit(1);
+        if (!participant) {
+          await db.delete(emailOutbox).where(eq(emailOutbox.id, row.id));
+          continue;
+        }
+      }
       if (message.type === "EVENT_REMINDER") {
         const refreshed = await refreshEventReminder(message);
         if (!refreshed) {

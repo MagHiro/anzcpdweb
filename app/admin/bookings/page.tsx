@@ -42,7 +42,7 @@ export default async function AdminBookingsPage({ searchParams }: {
     </nav>
 
     {byClass ? <>
-      <form key={`classes-${params.classSearch ?? ""}-${params.period ?? ""}`} className="mt-6 flex flex-wrap gap-3 rounded-2xl bg-white p-4" method="get">
+      <form key={`classes-${params.classSearch ?? ""}-${params.period ?? ""}`} className="admin-booking-filters mt-6 flex flex-wrap gap-3 rounded-2xl bg-white p-4" method="get">
         <input type="hidden" name="view" value="classes" />
         <input aria-label="Search classes" className={`${control} flex-1`} name="classSearch" defaultValue={params.classSearch ?? ""} placeholder="Search classes" />
         <select aria-label="Class period" name="period" defaultValue={params.period ?? ""} className={control}><option value="">All dates</option><option value="upcoming">Upcoming classes</option><option value="past">Past classes</option></select>
@@ -51,7 +51,7 @@ export default async function AdminBookingsPage({ searchParams }: {
       </form>
       <p className="mt-6 text-sm text-[var(--muted)]">{total} {total === 1 ? "class" : "classes"}</p>
       <div className="mt-3 overflow-x-auto rounded-2xl bg-white">
-        <table className="w-full min-w-[760px] text-left text-sm">
+        <table className="admin-booking-table w-full min-w-[760px] text-left text-sm">
           <thead className="bg-[var(--mist)] text-[var(--forest)]"><tr>
             {['Class', 'Participants', 'Pending', 'Bookings', ''].map((heading, index) => <th key={index} scope="col" className="px-5 py-4 font-medium">{heading || <span className="sr-only">Actions</span>}</th>)}
           </tr></thead>
@@ -67,9 +67,9 @@ export default async function AdminBookingsPage({ searchParams }: {
       </div>
       <p className="mt-3 text-xs leading-5 text-[var(--muted)]">Participants include confirmed and partially refunded bookings. Pending includes bookings awaiting or processing payment.</p>
     </> : <>
-      <form key={`bookings-${params.search ?? ""}-${params.classId ?? ""}-${params.status ?? ""}`} className="mt-6 grid gap-3 rounded-2xl bg-white p-4 lg:flex lg:items-center" method="get">
+      <form key={`bookings-${params.search ?? ""}-${params.classId ?? ""}-${params.status ?? ""}`} className="admin-booking-filters mt-6 grid gap-3 rounded-2xl bg-white p-4 lg:flex lg:items-center" method="get">
         <input aria-label="Search attendee or email" className={`${control} lg:flex-1`} name="search" defaultValue={params.search ?? ""} placeholder="Search attendee or email" />
-        <select aria-label="Class" className={`${control} w-full lg:w-[min(32%,28rem)]`} name="classId" defaultValue={params.classId ?? ""}>
+        <select aria-label="Class" title={selected ? `${selected.title} — ${formatDateTime(selected.startAt, selected.timezone)}` : "All classes"} className={`${control} w-full`} name="classId" defaultValue={params.classId ?? ""}>
           <option value="">All classes</option>
           {params.classId && !selected && <option value={params.classId}>Class not found</option>}
           {activities.map(activity => <option key={activity.id} value={activity.id}>{activity.title} — {formatDateTime(activity.startAt, activity.timezone)}</option>)}
@@ -83,9 +83,9 @@ export default async function AdminBookingsPage({ searchParams }: {
       </form>
 
       {selected && <section aria-label="Selected class" className="mt-6 rounded-2xl bg-white p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div><h2 className="display text-2xl text-[var(--forest)]">{selected.title}</h2><p className="mt-2 text-sm text-[var(--muted)]">{formatDateTime(selected.startAt, selected.timezone)} · {selected.timezone}</p></div>
-          <div className="flex flex-wrap gap-5 text-sm"><a href={`/api/admin/bookings/export?classId=${selected.id}`} className={linkStyle}>Export participants CSV</a><Link href={`/admin/classes/${selected.id}`} className={linkStyle}>Manage class</Link></div>
+        <div className="admin-booking-summary">
+          <div className="min-w-0"><h2 className="display text-2xl text-[var(--forest)]">{selected.title}</h2><p className="mt-2 text-sm text-[var(--muted)]">{formatDateTime(selected.startAt, selected.timezone)} · {selected.timezone}</p></div>
+          <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm"><a href={`/api/admin/bookings/export?classId=${selected.id}`} className={linkStyle}>Export participants CSV</a><Link href={`/admin/classes/${selected.id}`} className={linkStyle}>Manage class</Link></div>
         </div>
         <div className="mt-5 flex flex-wrap gap-x-8 gap-y-3 text-sm">
           <Link href={rosterHref(selected.id)} className={linkStyle}>{selected.participants} participants{!selected.unlimitedCapacity && selected.seatCapacity ? ` / ${selected.seatCapacity} capacity` : ""}</Link>
@@ -100,7 +100,7 @@ export default async function AdminBookingsPage({ searchParams }: {
       </div>
       {params.status === "participants" && <p className="mt-2 text-xs text-[var(--muted)]">Confirmed and partially refunded bookings only.</p>}
       <div className="mt-3 overflow-x-auto rounded-2xl bg-white">
-        <table className={`w-full ${selected ? "min-w-[640px]" : "min-w-[900px]"} text-left text-sm`}>
+        <table className={`admin-booking-table w-full ${selected ? "min-w-[1100px]" : "min-w-[900px]"} text-left text-sm`}>
           <thead className="bg-[var(--mist)] text-[var(--forest)]"><tr>
             {['Attendee', ...(!selected ? ['Class'] : []), 'Amount', 'Status', 'Booked', ...(selected ? ['Reminders', 'Attendance / actions'] : [])].map(heading => <th key={heading} scope="col" className="px-5 py-4 font-medium">{heading}</th>)}
           </tr></thead>
