@@ -5,6 +5,9 @@ import { StatusBadge } from "@/components/ui";
 import { formatDateTime, formatMoney, makePublicBookingReference } from "@/lib/utils";
 import { RefundForm, AdminCancelBookingForm } from "@/components/refund-form";
 import { uuidSchema } from "@/lib/validation";
+import { and, eq } from "drizzle-orm";
+import { auditLogs } from "@/db/schema";
+import { getDb } from "@/lib/db";
 
 export default async function AdminBookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,6 +16,8 @@ export default async function AdminBookingDetailPage({ params }: { params: Promi
   if (!row) notFound();
   const payment = row.payment;
   const refundable = payment ? Math.max(payment.amountCaptured - payment.amountRefunded, 0) : 0;
+  const [verification] = await getDb().select().from(auditLogs).where(and(eq(auditLogs.entityId, id), eq(auditLogs.action, "ADMIN_PAYMENT_VERIFIED"))).limit(1);
+  const verificationMetadata = verification?.metadata as { reference?: string } | undefined;
   return <div className="admin-booking-detail">
     <Link href="/admin/bookings" className="class-back-link focus-ring">← All bookings</Link>
     <header className="booking-detail-heading"><div><h1 className="display">{row.booking.fullName}</h1><a href={`mailto:${row.booking.email}`} className="booking-customer-email focus-ring">{row.booking.email}</a></div><StatusBadge status={row.booking.status} /></header>
@@ -26,10 +31,11 @@ export default async function AdminBookingDetailPage({ params }: { params: Promi
         <div><dt>Created</dt><dd>{formatDateTime(row.booking.createdAt, row.booking.timezoneSnapshot)}<span className="booking-timezone">{row.booking.timezoneSnapshot}</span></dd></div>
       </dl></section>
       <section className="admin-detail-panel"><h2>Payment</h2>{payment ? <><div className="mt-5"><StatusBadge status={payment.status} /></div><dl className="booking-payment-totals"><div><dt>Captured</dt><dd>{formatMoney(payment.amountCaptured, payment.currency)}</dd></div><div><dt>Refunded</dt><dd>{formatMoney(payment.amountRefunded, payment.currency)}</dd></div></dl></> : <p className="booking-payment-empty">No payment record for this booking.</p>}
+        {verification && <p className="mt-4 text-sm">Payment manually verified · {verificationMetadata?.reference} · {formatDateTime(verification.createdAt, row.booking.timezoneSnapshot)}</p>}
         <details className="booking-provider-details"><summary className="focus-ring">Stripe references</summary><dl className="booking-record-fields"><div><dt>Checkout session</dt><dd>{row.booking.stripeCheckoutSessionId ?? "Not available"}</dd></div><div><dt>Payment intent</dt><dd>{row.booking.stripePaymentIntentId ?? "Not available"}</dd></div></dl></details>
       </section>
     </div>
-    {payment && refundable > 0 && ["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status) && <section className="admin-detail-panel booking-refund-panel"><h2>Issue a refund</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">Refunds are separate from cancellation. Stripe events confirm the final refund status.</p><div className="mt-6 max-w-xl"><RefundForm bookingId={row.booking.id} maxAmount={refundable} currency={payment.currency} /></div></section>}
+    {payment && refundable > 0 && ["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(payment.status) && (payment.stripePaymentIntentId ? <section className="admin-detail-panel booking-refund-panel"><h2>Issue a refund</h2><p className="mt-3 text-sm leading-6 text-[var(--muted)]">Refunds are separate from cancellation. Stripe events confirm the final refund status.</p><div className="mt-6 max-w-xl"><RefundForm bookingId={row.booking.id} maxAmount={refundable} currency={payment.currency} /></div></section> : <p className="mt-6 text-sm text-[var(--muted)]">This payment was received outside Stripe. Any refund must be handled separately through the original payment method.</p>)}
     {!["CANCELLED", "REFUNDED"].includes(row.booking.status) && <section className="booking-cancel-panel"><div><h2>Cancel booking</h2><p>This cancels attendance only. Any refund must be issued separately.</p></div><AdminCancelBookingForm bookingId={row.booking.id} /></section>}
   </div>;
 }

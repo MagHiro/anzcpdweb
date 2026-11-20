@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Field, FormNotice, TextInput } from "@/components/ui";
 import { RecordingPlayer } from "@/components/recording-player";
+import { resourceResponse } from "@/lib/http-response";
 
 type Resource = { id: string; title: string; kind: string; published: boolean; objectKey?: string | null };
 export function ClassResourceManager({ classId, resources }: { classId: string; resources: Resource[] }) {
@@ -19,12 +20,12 @@ export function ClassResourceManager({ classId, resources }: { classId: string; 
     setBusy(true); setError(undefined); setSuccess(undefined); setProgress(0);
     try {
       const created = await fetch("/api/admin/recordings", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ classId, title: data.get("title") }) });
-      const resource = await created.json();
+      const resource = await resourceResponse(created);
       if (!created.ok) throw new Error(resource.error ?? "Recording could not be created.");
-      const chunkSize = 8 * 1024 * 1024;
+      const chunkSize = 4 * 1024 * 1024;
       for (let offset = 0; offset < file.size; offset += chunkSize) {
         const response = await fetch(`/api/admin/recordings?id=${resource.id}`, { method: "PUT", headers: { "content-type": "application/octet-stream", "x-upload-offset": String(offset), "x-upload-total": String(file.size) }, body: file.slice(offset, offset + chunkSize) });
-        const result = await response.json();
+        const result = await resourceResponse(response);
         if (!response.ok) throw new Error(result.error ?? "Upload failed. Remove the incomplete draft and try again.");
         setProgress(Math.round(Math.min(offset + chunkSize, file.size) / file.size * 100));
       }
@@ -38,7 +39,7 @@ export function ClassResourceManager({ classId, resources }: { classId: string; 
     form.set("classId", classId);
     try {
       const response = await fetch("/api/admin/class-resources", { method: "POST", body: form });
-      const result = await response.json();
+      const result = await resourceResponse(response);
       if (!response.ok) throw new Error(result.error ?? "Resource update failed.");
       setSuccess("Changes saved."); router.refresh();
       return true;

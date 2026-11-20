@@ -4,7 +4,7 @@ import { Readable } from "node:stream";
 import path from "node:path";
 
 export const MAX_RECORDING_BYTES = 2 * 1024 * 1024 * 1024;
-export const RECORDING_CHUNK_BYTES = 8 * 1024 * 1024;
+export const RECORDING_CHUNK_BYTES = 4 * 1024 * 1024;
 const root = path.join(process.cwd(), "private", "resources");
 function recordingPath(key: string) {
   if (!/^[a-f0-9-]{36}\.mp4$/.test(key)) throw new Error("Invalid recording key.");

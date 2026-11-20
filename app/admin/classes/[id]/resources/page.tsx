@@ -25,7 +25,7 @@ export default async function ClassResourcesPage({ params }: { params: Promise<{
     <h1 className="display mt-6 text-4xl text-[var(--forest)]">{row.class.title}</h1>
     <p className="mt-3 text-sm text-[var(--muted)]">{formatDateTime(row.class.startAt, row.class.timezone)} · {row.class.timezone}</p>
     <AdminClassNav classId={id} current="resources" />
-    <ClassResourceManager classId={id} resources={resources.map(({ id, title, kind, published }) => ({ id, title, kind, published }))} />
+    <ClassResourceManager classId={id} resources={resources.map(({ id, title, kind, published, objectKey }) => ({ id, title, kind, published, objectKey }))} />
     <AdminResourceEmail classId={id} recipientCount={uniqueClassRecipients(participants).length} ready={await resourceReadiness(resources)} />
   </div>;
 }

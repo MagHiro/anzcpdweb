@@ -1,5 +1,5 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
-import { auditLogs, bookings, classes, emailOutbox, payments } from "@/db/schema";
+import { auditLogs, bookings, classes, emailOutbox, payments, user } from "@/db/schema";
 import { getCountryConfig } from "@/lib/domain/countries";
 import { professionalIdentifierSchema } from "@/lib/validation";
 import { getDb, type Database } from "@/lib/db";
@@ -56,20 +56,25 @@ export async function refreshCapacityStatus(tx: QueryExecutor, classId: string, 
   if (nextStatus !== classRecord.status) await tx.update(classes).set({ status: nextStatus, updatedAt: now }).where(eq(classes.id, classId));
 }
 
-export async function createBookingCheckout(input: CreateCheckoutInput) {
+export async function createBookingCheckout(input: CreateCheckoutInput, admin?: { actorId: string; mode: "LINK" | "VERIFIED"; reference?: string }) {
   const db = getDb();
+  if (admin) {
+    const [account] = await db.select({ id: user.id }).from(user).where(eq(user.email, input.email.toLowerCase())).limit(1);
+    input = { ...input, userId: account?.id, createAccountRequested: !account };
+    if (admin.mode === "VERIFIED" && !admin.reference?.trim()) throw new Error("Enter the payment verification reference.");
+  }
   const createAccountRequested = !input.userId && input.createAccountRequested;
   const existing = await db.select().from(bookings).where(eq(bookings.idempotencyKey, input.idempotencyKey)).limit(1);
   if (existing[0] && (existing[0].email !== input.email.toLowerCase() || existing[0].userId !== (input.userId ?? null))) throw new Error("This booking request belongs to a different attendee or account.");
-  if (existing[0]?.status === "CONFIRMED" && existing[0].amountSnapshot === 0) {
+  if (existing[0]?.status === "CONFIRMED" && (existing[0].amountSnapshot === 0 || admin?.mode === "VERIFIED")) {
     const [activity] = await db.select({ slug: classes.slug }).from(classes).where(eq(classes.id, existing[0].classId)).limit(1);
     if (activity?.slug !== input.classSlug) throw new Error("This booking request belongs to a different class.");
-    return completeFreeBooking(existing[0], true);
+    return completeConfirmedBooking(existing[0], true);
   }
   if (existing[0] && ["CONFIRMED", "PARTIALLY_REFUNDED", "REFUNDED", "CANCELLED", "PAYMENT_PROCESSING"].includes(existing[0].status)) throw new Error("This booking is already being processed or is closed. Check your account before trying to pay again.");
   if (existing[0]?.stripeCheckoutSessionId && existing[0].amountSnapshot > 0) {
     const [activity] = await db.select().from(classes).where(eq(classes.id, existing[0].classId)).limit(1);
-    if (!activity || activity.slug !== input.classSlug || !["PUBLISHED", "SOLD_OUT"].includes(activity.status)) throw new Error("This class is no longer available for booking.");
+    if (!activity || activity.slug !== input.classSlug || !(admin ? ["PUBLISHED", "SOLD_OUT", "COMPLETED"] : ["PUBLISHED", "SOLD_OUT"]).includes(activity.status)) throw new Error("This class is no longer available for booking.");
     const session = await getStripe().checkout.sessions.retrieve(existing[0].stripeCheckoutSessionId);
     if (session.status === "open" && session.url) return { booking: existing[0], checkoutUrl: session.url, reused: true };
     if (session.status === "complete") throw new Error("This checkout has completed. Check your booking before attempting another payment.");
@@ -83,10 +88,14 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
       if (alreadyCreated.email !== input.email.toLowerCase() || alreadyCreated.userId !== (input.userId ?? null)) throw new Error("This booking request belongs to a different attendee or account.");
       if (["PAYMENT_FAILED", "EXPIRED"].includes(alreadyCreated.status)) {
         const [classRecord] = await tx.select().from(classes).where(eq(classes.id, alreadyCreated.classId)).for("update").limit(1);
-        if (!classRecord || !["PUBLISHED", "SOLD_OUT"].includes(classRecord.status)) throw new Error("This class is no longer available for booking.");
+        if (!classRecord || !(admin ? ["PUBLISHED", "SOLD_OUT", "COMPLETED"] : ["PUBLISHED", "SOLD_OUT"]).includes(classRecord.status)) throw new Error("This class is no longer available for booking.");
         const now = new Date();
-        if (now < classRecord.bookingOpensAt) throw new Error("Booking has not opened for this class yet.");
-        if (now > classRecord.bookingClosesAt || now >= classRecord.startAt) throw new Error("Booking is closed for this class.");
+        if (!admin && now < classRecord.bookingOpensAt) throw new Error("Booking has not opened for this class yet.");
+        if (!admin && (now > classRecord.bookingClosesAt || now >= classRecord.startAt)) throw new Error("Booking is closed for this class.");
+        if (admin) {
+          const [duplicate] = await tx.select({ id: bookings.id }).from(bookings).where(and(eq(bookings.classId, classRecord.id), eq(bookings.email, input.email.toLowerCase()), inArray(bookings.status, ["CONFIRMED", "PARTIALLY_REFUNDED", "PENDING_PAYMENT", "PAYMENT_PROCESSING"]))).limit(1);
+          if (duplicate) throw new Error("This participant already has an active booking. Check All booking records.");
+        }
         if (!classRecord.unlimitedCapacity) {
           const seats = await activeSeatCount(tx, classRecord.id);
           if (!classRecord.seatCapacity || seats >= classRecord.seatCapacity) throw new Error("This class has sold out. Please return to the class page for the latest availability.");
@@ -102,10 +111,14 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
 
     const [classRecord] = await tx.select().from(classes).where(eq(classes.slug, input.classSlug)).for("update").limit(1);
     if (!classRecord) throw new Error("This class is no longer available.");
-    if (!["PUBLISHED", "SOLD_OUT"].includes(classRecord.status)) throw new Error("This class is no longer available for booking.");
+    if (!(admin ? ["PUBLISHED", "SOLD_OUT", "COMPLETED"] : ["PUBLISHED", "SOLD_OUT"]).includes(classRecord.status)) throw new Error("This class is no longer available for booking.");
     const now = new Date();
-    if (now < classRecord.bookingOpensAt) throw new Error("Booking has not opened for this class yet.");
-    if (now > classRecord.bookingClosesAt || now >= classRecord.startAt) throw new Error("Booking is closed for this class.");
+    if (!admin && now < classRecord.bookingOpensAt) throw new Error("Booking has not opened for this class yet.");
+    if (!admin && (now > classRecord.bookingClosesAt || now >= classRecord.startAt)) throw new Error("Booking is closed for this class.");
+    if (admin) {
+      const [duplicate] = await tx.select({ id: bookings.id }).from(bookings).where(and(eq(bookings.classId, classRecord.id), eq(bookings.email, input.email.toLowerCase()), inArray(bookings.status, ["CONFIRMED", "PARTIALLY_REFUNDED", "PENDING_PAYMENT", "PAYMENT_PROCESSING"]))).limit(1);
+      if (duplicate) throw new Error("This participant already has an active booking. Check All booking records.");
+    }
     if (!classRecord.unlimitedCapacity) {
       const seats = await activeSeatCount(tx, classRecord.id);
       if (!classRecord.seatCapacity || seats >= classRecord.seatCapacity) throw new Error("This class has sold out. Please return to the class page for the latest availability.");
@@ -128,15 +141,16 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
         professionalIdentifierType: classRecord.professionalIdentifierRequired ? country.identifierType : identifier ? country.identifierType : null,
         professionalIdentifier: identifier,
         createAccountRequested,
-        status: classRecord.priceMinorUnits === 0 ? "CONFIRMED" : "PENDING_PAYMENT",
+        status: classRecord.priceMinorUnits === 0 || admin?.mode === "VERIFIED" ? "CONFIRMED" : "PENDING_PAYMENT",
         amountSnapshot: classRecord.priceMinorUnits,
         currencySnapshot: classRecord.currency,
         classTitleSnapshot: classRecord.title,
         cpdUnitTypeSnapshot: classRecord.cpdUnitType,
         cpdAmountSnapshot: classRecord.cpdUnitAmount,
         timezoneSnapshot: classRecord.timezone,
-        seatReservationExpiresAt: classRecord.priceMinorUnits === 0 ? null : reservationExpiresAt,
-        confirmedAt: classRecord.priceMinorUnits === 0 ? now : null,
+        seatReservationExpiresAt: classRecord.priceMinorUnits === 0 || admin?.mode === "VERIFIED" ? null : reservationExpiresAt,
+        confirmedAt: classRecord.priceMinorUnits === 0 || admin?.mode === "VERIFIED" ? now : null,
+        paidAt: classRecord.priceMinorUnits > 0 && admin?.mode === "VERIFIED" ? now : null,
         termsAcceptedAt: input.termsAcceptedAt,
         refundPolicyAcceptedAt: input.refundPolicyAcceptedAt,
         idempotencyKey: input.idempotencyKey,
@@ -147,12 +161,15 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
       bookingId: booking.id,
       amountTotal: booking.amountSnapshot,
       currency: booking.currencySnapshot,
-      status: booking.amountSnapshot === 0 ? "SUCCEEDED" : "PENDING",
+      status: booking.amountSnapshot === 0 || admin?.mode === "VERIFIED" ? "SUCCEEDED" : "PENDING",
+      amountCaptured: admin?.mode === "VERIFIED" ? booking.amountSnapshot : 0,
     });
+    if (admin) await tx.insert(auditLogs).values({ actorUserId: admin.actorId, action: admin.mode === "VERIFIED" ? "ADMIN_PAYMENT_VERIFIED" : "ADMIN_BOOKING_CREATED", entityType: "booking", entityId: booking.id, metadata: { mode: admin.mode, reference: admin.reference, amount: booking.amountSnapshot, currency: booking.currencySnapshot, policyAcknowledgement: "Administrator confirmed participant acceptance" } });
     await refreshCapacityStatus(tx, classRecord.id, now);
     return booking;
   });
 
+  if (admin?.mode === "VERIFIED") return completeConfirmedBooking(created, false);
   if (created.amountSnapshot === 0) {
     // Legacy pending $0 bookings are completed under the same class/booking locks.
     const confirmed = await db.transaction(async (tx) => {
@@ -170,7 +187,7 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
       await refreshCapacityStatus(tx, booking.classId, now);
       return updated;
     });
-    return completeFreeBooking(confirmed, false);
+    return completeConfirmedBooking(confirmed, false);
   }
 
   if (created.stripeCheckoutSessionId) {
@@ -242,7 +259,7 @@ export async function createBookingCheckout(input: CreateCheckoutInput) {
   }
 }
 
-async function completeFreeBooking(booking: typeof bookings.$inferSelect, reused: boolean) {
+async function completeConfirmedBooking(booking: typeof bookings.$inferSelect, reused: boolean) {
   await enqueuePaymentReceipt(booking.id);
   await enqueueBookingFulfilmentEmails(booking);
   const token = booking.userId ? undefined : await createAccountToken({ email: booking.email, purpose: "GUEST_BOOKING_ACCESS", bookingId: booking.id, expiresInMs: 30 * 24 * 60 * 60 * 1000 });
