@@ -13,7 +13,7 @@ const schema = z.object({
   professionalIdentifier: z.string().trim().max(80).optional(),
   mode: z.enum(["LINK", "VERIFIED"]), reference: z.string().trim().max(500).optional(),
   policiesConfirmed: z.literal(true),
-}).refine(data => data.mode !== "VERIFIED" || Boolean(data.reference), { message: "Enter the payment verification reference." });
+});
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return Response.json({ error: "Request origin not allowed." }, { status: 403 });

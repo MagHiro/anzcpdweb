@@ -31,7 +31,7 @@ export default async function AdminBookingDetailPage({ params }: { params: Promi
         <div><dt>Created</dt><dd>{formatDateTime(row.booking.createdAt, row.booking.timezoneSnapshot)}<span className="booking-timezone">{row.booking.timezoneSnapshot}</span></dd></div>
       </dl></section>
       <section className="admin-detail-panel"><h2>Payment</h2>{payment ? <><div className="mt-5"><StatusBadge status={payment.status} /></div><dl className="booking-payment-totals"><div><dt>Captured</dt><dd>{formatMoney(payment.amountCaptured, payment.currency)}</dd></div><div><dt>Refunded</dt><dd>{formatMoney(payment.amountRefunded, payment.currency)}</dd></div></dl></> : <p className="booking-payment-empty">No payment record for this booking.</p>}
-        {verification && <p className="mt-4 text-sm">Payment manually verified · {verificationMetadata?.reference} · {formatDateTime(verification.createdAt, row.booking.timezoneSnapshot)}</p>}
+        {verification && <p className="mt-4 text-sm">Payment manually verified{verificationMetadata?.reference && ` · ${verificationMetadata.reference}`} · {formatDateTime(verification.createdAt, row.booking.timezoneSnapshot)}</p>}
         <details className="booking-provider-details"><summary className="focus-ring">Stripe references</summary><dl className="booking-record-fields"><div><dt>Checkout session</dt><dd>{row.booking.stripeCheckoutSessionId ?? "Not available"}</dd></div><div><dt>Payment intent</dt><dd>{row.booking.stripePaymentIntentId ?? "Not available"}</dd></div></dl></details>
       </section>
     </div>

@@ -61,7 +61,6 @@ export async function createBookingCheckout(input: CreateCheckoutInput, admin?: 
   if (admin) {
     const [account] = await db.select({ id: user.id }).from(user).where(eq(user.email, input.email.toLowerCase())).limit(1);
     input = { ...input, userId: account?.id, createAccountRequested: !account };
-    if (admin.mode === "VERIFIED" && !admin.reference?.trim()) throw new Error("Enter the payment verification reference.");
   }
   const createAccountRequested = !input.userId && input.createAccountRequested;
   const existing = await db.select().from(bookings).where(eq(bookings.idempotencyKey, input.idempotencyKey)).limit(1);

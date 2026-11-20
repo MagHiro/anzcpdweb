@@ -17,9 +17,8 @@ it("requires same-origin admin access", async () => {
   mocks.origin.mockReturnValue(true); mocks.admin.mockResolvedValue(null); expect((await POST(request())).status).toBe(403);
   expect(mocks.create).not.toHaveBeenCalled();
 });
-it("requires policy acknowledgement and verification evidence", async () => {
+it("requires policy acknowledgement", async () => {
   expect((await POST(request({ policiesConfirmed: false }))).status).toBe(400);
-  expect((await POST(request({ mode: "VERIFIED" }))).status).toBe(400);
   expect(mocks.create).not.toHaveBeenCalled();
 });
 it("creates a copyable checkout link with normalized identity and scoped retry key", async () => {
@@ -32,6 +31,10 @@ it("confirms verified payments without returning a payment URL", async () => {
   const response = await POST(request({ mode: "VERIFIED", reference: "Bank transfer 123" }));
   expect(await response.json()).toMatchObject({ confirmed: true, paymentUrl: null });
   expect(mocks.create.mock.calls[0][1]).toEqual({ actorId: "admin", mode: "VERIFIED", reference: "Bank transfer 123" });
+});
+it("accepts verified payments without a payment reference", async () => {
+  expect((await POST(request({ mode: "VERIFIED" }))).status).toBe(200);
+  expect(mocks.create.mock.calls[0][1]).toEqual({ actorId: "admin", mode: "VERIFIED", reference: undefined });
 });
 it("enforces rate limits and reports booking conflicts", async () => {
   mocks.limit.mockResolvedValue(false); expect((await POST(request())).status).toBe(429);

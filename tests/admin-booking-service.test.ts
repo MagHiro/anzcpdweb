@@ -44,9 +44,10 @@ it("rejects duplicate active participants before creating records", async () => 
   await expect(createBookingCheckout(input, { actorId: "admin", mode: "VERIFIED", reference: "Transfer" })).rejects.toThrow("active booking");
   expect(inserted).toHaveLength(0);
 });
-it("rejects missing verification evidence", async () => {
-  await expect(createBookingCheckout(input, { actorId: "admin", mode: "VERIFIED" })).rejects.toThrow("verification reference");
-  expect(mocks.transaction).not.toHaveBeenCalled();
+it("confirms verified payments without a payment reference while retaining the audit record", async () => {
+  const result = await createBookingCheckout(input, { actorId: "admin", mode: "VERIFIED" });
+  expect(result.booking.status).toBe("CONFIRMED");
+  expect(inserted.find(item => item.table === auditLogs)?.values).toMatchObject({ actorUserId: "admin", action: "ADMIN_PAYMENT_VERIFIED" });
 });
 it("enforces capacity even for verified payments", async () => {
   results[4] = [{ ...activity, unlimitedCapacity: false, seatCapacity: 1 }];
