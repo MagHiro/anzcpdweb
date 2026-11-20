@@ -1,5 +1,6 @@
 import { readPrivatePdf } from "@/server/media/private-resources";
 import { MAX_MATERIAL_BYTES } from "./resource-attachments";
+import { recordingSize } from "@/server/media/private-recordings";
 
 export async function resourceReadiness(resources: { kind: string; published: boolean; objectKey: string | null; recordingUrl: string | null }[]) {
   let materials = false;
@@ -13,6 +14,9 @@ export async function resourceReadiness(resources: { kind: string; published: bo
     }
     if (resource.kind === "RECORDING" && resource.recordingUrl) {
       try { const url = new URL(resource.recordingUrl); if (url.protocol === "https:" && !url.username && !url.password) recording = true; } catch { /* Invalid links are not ready to share. */ }
+    }
+    if (resource.kind === "RECORDING" && resource.objectKey) {
+      try { await recordingSize(resource.objectKey); recording = true; } catch { /* Incomplete uploads are not ready. */ }
     }
   }
   return { materials: materials && !invalidMaterial && totalBytes <= MAX_MATERIAL_BYTES, recording };

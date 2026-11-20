@@ -27,7 +27,7 @@ export function AdminResourceEmail({ classId, recipientCount, ready }: { classId
     <h2 className="display text-2xl text-[var(--forest)]">Share class resources</h2>
     <p className="mt-2 text-sm text-[var(--muted)]">Email {recipientCount} unique participant addresses. Materials are attached as PDFs; recordings are accessed through their account. Confirmed and partially refunded bookings only.</p>
     <div className="mt-5 flex flex-wrap gap-3">{(Object.keys(resourceTemplateLabels) as ResourceTemplate[]).map(template => <Button key={template} type="button" variant="secondary" disabled={busy || !recipientCount || !resourceTemplateReady(template, ready)} onClick={() => void send(template)}>Send {resourceTemplateLabels[template].toLowerCase()}</Button>)}</div>
-    {(!ready.materials || !ready.recording) && <p className="mt-3 text-sm text-[var(--muted)]">{!ready.materials && "Materials not ready: publish an available PDF above (18 MB combined attachment limit). "}{!ready.recording && "Recording not ready: add and publish an HTTPS recording link. "}The combined template requires both.</p>}
+    {(!ready.materials || !ready.recording) && <p className="mt-3 text-sm text-[var(--muted)]">{!ready.materials && "Materials not ready: publish an available PDF above (18 MB combined attachment limit). "}{!ready.recording && "Recording not ready: upload and publish a recording, or publish an HTTPS recording link. "}The combined template requires both.</p>}
     <FormNotice>{error}</FormNotice><FormNotice tone="success">{success}</FormNotice>
   </section>;
 }

@@ -6,6 +6,7 @@ import { isSameOrigin } from "@/lib/security/origin";
 import { requestAdmin } from "@/server/auth/admin-request";
 import { deletePrivatePdf, storePrivatePdf } from "@/server/media/private-resources";
 import { writeAuditLog } from "@/server/audit";
+import { deletePrivateRecording, recordingSize } from "@/server/media/private-recordings";
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return Response.json({ error: "Request origin not allowed." }, { status: 403 });
@@ -52,8 +53,13 @@ export async function POST(request: Request) {
     if (!resource) return Response.json({ error: "Resource not found." }, { status: 404 });
     if (action === "remove") {
       await db.delete(classResources).where(condition);
-      if (resource.objectKey) await deletePrivatePdf(resource.objectKey).catch(() => undefined);
-    } else await db.update(classResources).set({ published: action === "publish", updatedAt: new Date() }).where(condition);
+      if (resource.objectKey) await (resource.kind === "RECORDING" ? deletePrivateRecording(resource.objectKey) : deletePrivatePdf(resource.objectKey)).catch(() => undefined);
+    } else {
+      if (action === "publish" && resource.kind === "RECORDING" && resource.objectKey) {
+        try { await recordingSize(resource.objectKey); } catch { return Response.json({ error: "Finish uploading the recording before publishing." }, { status: 400 }); }
+      }
+      await db.update(classResources).set({ published: action === "publish", updatedAt: new Date() }).where(condition);
+    }
   }
   await writeAuditLog({ actorUserId: admin.id, action: `CLASS_RESOURCE_${action.toUpperCase()}`, entityType: "class", entityId: classId, metadata: { resourceId } });
   return Response.json({ success: true });
