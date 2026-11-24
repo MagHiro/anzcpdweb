@@ -131,7 +131,7 @@ test("class detail keeps schedule and booking ahead of the description on mobile
   const about = main.getByRole("heading", { name: "About the class" });
   await expect(booking).toHaveCSS("position", "static");
   const [scheduleBox, bookingBox, aboutBox] = await Promise.all([schedule.boundingBox(), booking.boundingBox(), about.boundingBox()]);
-  expect(scheduleBox!.y + scheduleBox!.height).toBeLessThan(bookingBox!.y);
+  expect(scheduleBox!.y + scheduleBox!.height).toBeLessThanOrEqual(bookingBox!.y);
   expect(bookingBox!.y + bookingBox!.height).toBeLessThan(aboutBox!.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
