@@ -3,6 +3,7 @@ import { getAdminBookingClasses, getAdminBookingCount, getAdminBookingRows, getA
 import { AdminParticipantControls } from "@/components/admin-participant-controls";
 import { formatStatusLabel, Pagination, StatusBadge } from "@/components/ui";
 import { formatDateTime, formatMoney as money } from "@/lib/utils";
+import { AdminPageHeading } from "@/components/admin-page-heading";
 
 const statuses = ["PENDING_PAYMENT", "PAYMENT_PROCESSING", "CONFIRMED", "PAYMENT_FAILED", "CANCELLED", "PARTIALLY_REFUNDED", "REFUNDED", "EXPIRED"];
 const control = "focus-ring min-h-11 min-w-0 rounded-xl bg-[var(--mist)] px-4 text-sm";
@@ -35,10 +36,10 @@ export default async function AdminBookingsPage({ searchParams }: {
   const rosterHref = (id: string) => `/admin/classes/${id}/participants`;
 
   return <div>
-    <h1 className="display text-5xl text-[var(--forest)]">Bookings</h1>
-    <nav aria-label="Booking views" className="mt-7 flex gap-2">
-      <Link href="/admin/bookings" aria-current={!byClass ? "page" : undefined} className={`focus-ring rounded-full px-5 py-3 text-sm ${!byClass ? "bg-[var(--forest)] text-white" : "text-[var(--forest)] hover:bg-[var(--mint)]"}`}>All bookings</Link>
-      <Link href="/admin/bookings?view=classes" aria-current={byClass ? "page" : undefined} className={`focus-ring rounded-full px-5 py-3 text-sm ${byClass ? "bg-[var(--forest)] text-white" : "text-[var(--forest)] hover:bg-[var(--mint)]"}`}>By class</Link>
+    <AdminPageHeading title="Bookings" />
+    <nav aria-label="Booking views" className="admin-record-tabs">
+      <Link href="/admin/bookings" aria-current={!byClass ? "page" : undefined} className="focus-ring">All bookings</Link>
+      <Link href="/admin/bookings?view=classes" aria-current={byClass ? "page" : undefined} className="focus-ring">By class</Link>
     </nav>
 
     {byClass ? <>

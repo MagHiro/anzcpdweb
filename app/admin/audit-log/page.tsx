@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAuditLogRows } from "@/server/catalogue/queries";
+import { AdminPageHeading } from "@/components/admin-page-heading";
 
 function readable(value: string) {
   return value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replaceAll("_", " ").toLowerCase().replace(/^./, letter => letter.toUpperCase()).replace(/\bcpd\b/g, "CPD").replace(/\bid\b/g, "ID").replace(/\burl\b/g, "URL");
@@ -25,7 +26,7 @@ function recordHref(type: string, id: string) {
 export default async function AdminAuditLogPage() {
   const rows = await getAuditLogRows();
   return <div>
-    <div className="admin-page-heading"><h1 className="display">Audit log</h1></div>
+    <AdminPageHeading title="Audit log" />
     <div className="audit-activity-list mt-8">
       {!rows.length && <p className="p-8 text-sm text-[var(--muted)]">No audit events to display.</p>}
       {rows.map(({ audit, actorName }) => {

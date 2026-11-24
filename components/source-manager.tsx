@@ -1,4 +1,6 @@
 "use client";
+
+import { AdminPageHeading } from "@/components/admin-page-heading";
 import { useState } from "react";
 import type { sourceReferences } from "@/db/schema";
 import { AdminModal } from "@/components/admin-modal";
@@ -30,7 +32,7 @@ export function SourceManager({ rows }: { rows: Source[] }) {
   }
   function confirmDelete(source: Source) { setEditing(null); setError(""); setDeleting(source); }
   return <>
-    <div className="admin-page-heading"><h1 className="display">Source references</h1><Button onClick={() => setEditing("new")}>New reference</Button></div>
+    <AdminPageHeading title="Source references" actions={<Button onClick={() => setEditing("new")}>New reference</Button>} />
     <div className="admin-source-list mt-8">
       {rows.map(source => <article key={source.id} className="admin-source-row">
         <div className="admin-source-content"><h2><a href={source.url} target="_blank" rel="noreferrer" className="focus-ring">{source.title}<ArrowUpRight size={18} className="shrink-0" /><span className="sr-only"> (opens in a new tab)</span></a></h2><p>{source.authority}</p></div>

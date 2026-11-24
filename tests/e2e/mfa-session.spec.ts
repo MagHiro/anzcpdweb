@@ -28,7 +28,7 @@ test("customer MFA setup, required challenge, single-use recovery and session du
     await page.goto("/sign-in");
     await page.locator('input[name="email"]').fill(email);
     await page.locator('input[name="password"]').fill(password);
-    if (remember) await page.getByRole("checkbox", { name: "Remember me for 7 days" }).check();
+    if (remember) await page.getByRole("checkbox", { name: "Stay signed in for 2 days" }).check();
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
   }
   async function post(path: string, body: object) {
@@ -63,7 +63,8 @@ test("customer MFA setup, required challenge, single-use recovery and session du
     await page.getByRole("button", { name: "Verify and sign in" }).click();
     await page.waitForURL("/account");
     const [remembered] = await db.select().from(sessions).where(eq(sessions.userId, id));
-    expect(remembered.expiresAt.getTime() - remembered.createdAt.getTime()).toBeGreaterThan(6.99 * 86400000);
+    expect(remembered.expiresAt.getTime() - remembered.createdAt.getTime()).toBeGreaterThan(2 * 86400000 - 1000);
+    expect(remembered.expiresAt.getTime() - remembered.createdAt.getTime()).toBeLessThanOrEqual(2 * 86400000 + 1000);
     await post("/api/auth/sign-out", {});
     await login();
     await expect(page.getByRole("button", { name: "Verify and sign in" })).toBeVisible();

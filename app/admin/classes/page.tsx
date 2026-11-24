@@ -1,6 +1,7 @@
 import { ClassManager } from "@/components/admin-managers";
 import { getAdminClasses, getCategories, getPresenters } from "@/server/catalogue/queries";
 import { LinkButton, Pagination } from "@/components/ui";
+import { AdminPageHeading } from "@/components/admin-page-heading";
 
 export default async function AdminClassesPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string; country?: string; page?: string }> }) {
   const params = await searchParams;
@@ -21,10 +22,7 @@ export default async function AdminClassesPage({ searchParams }: { searchParams:
   };
 
   return <div>
-    <div className="admin-page-heading">
-      <h1 className="display text-[var(--forest)]">Classes</h1>
-      <LinkButton href="/admin/classes/new">New class</LinkButton>
-    </div>
+    <AdminPageHeading title="Classes" actions={<LinkButton href="/admin/classes/new">New class</LinkButton>} />
     <form className="admin-list-filters mt-8" method="get" role="search" aria-label="Filter classes">
       <input name="search" aria-label="Search title" defaultValue={params.search} placeholder="Search title" className="focus-ring px-4 text-sm" />
       <select name="status" aria-label="Status" defaultValue={params.status ?? ""} className="focus-ring px-4 text-sm">

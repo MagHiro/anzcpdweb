@@ -10,6 +10,7 @@ import { AdminParticipantControls } from "@/components/admin-participant-control
 import { formatStatusLabel } from "@/components/ui";
 import { AdminClassNav } from "@/components/admin-class-nav";
 import { AdminAddParticipant } from "@/components/admin-add-participant";
+import { AdminPageHeading } from "@/components/admin-page-heading";
 
 export default async function ClassParticipantsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,14 +25,12 @@ export default async function ClassParticipantsPage({ params }: { params: Promis
   const hours = (activity.startAt.getTime() - now.getTime()) / 3600000;
   const reminderDays = ["PUBLISHED", "SOLD_OUT"].includes(activity.status) && hours > 0 ? hours <= 24 ? 1 : hours <= 72 ? 3 : undefined : undefined;
   return <div>
-    <Link href="/admin/bookings?view=classes" className="ink-link">← Classes</Link>
-    <h1 className="display mt-6 text-4xl text-[var(--forest)]">{activity.title}</h1>
-    <p className="mt-3 text-sm text-[var(--muted)]">{formatDateTime(activity.startAt, activity.timezone)} · {activity.timezone}</p>
+    <AdminPageHeading title={activity.title} back={{ href: "/admin/bookings?view=classes", label: "Bookings by class" }} description={`${formatDateTime(activity.startAt, activity.timezone)} · ${activity.timezone}`} />
     <AdminClassNav classId={id} current="participants" />
     <AdminAddParticipant classId={id} paid={activity.priceMinorUnits > 0} />
     <div className="mt-6 flex flex-wrap gap-5 text-sm"><a href={`/api/admin/bookings/export?classId=${id}`} className="ink-link">Export participants CSV</a><Link href={`/admin/bookings?classId=${id}`} className="ink-link">All booking records</Link></div>
     <div className="mt-8 flex flex-wrap items-baseline justify-between gap-3"><h2 className="display text-2xl text-[var(--forest)]">Participants ({participants.length})</h2><p className="text-sm text-[var(--muted)]">{participants.filter(item => item.attendance === "ATTENDED").length} attended · {participants.filter(item => item.attendance === "ABSENT").length} absent</p></div>
-    <p className="mt-2 text-xs text-[var(--muted)]">Confirmed and partially refunded bookings. All participants are listed on this page.</p>
+    <p className="mt-2 text-xs text-[var(--muted)]">Includes confirmed and partially refunded bookings.</p>
     <div className="mt-5 overflow-x-auto rounded-2xl bg-white"><table className="admin-booking-table w-full min-w-[900px] text-left text-sm">
       <thead className="bg-[var(--mist)]"><tr>{["Participant", "Professional identifier", "Reminders", "Attendance / actions"].map(label => <th key={label} scope="col" className="px-5 py-4 font-medium">{label}</th>)}</tr></thead>
       <tbody className="divide-y divide-[var(--line)]">{participants.map(participant => <tr key={participant.id}>

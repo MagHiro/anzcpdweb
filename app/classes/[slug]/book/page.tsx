@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
-import { Container, LinkButton, PageIntro, Section } from "@/components/ui";
+import Link from "next/link";
+import { Container, Section } from "@/components/ui";
+import { ArrowRight } from "@/components/icon";
 import { BookingForm } from "@/components/booking-form";
 import { getPublishedClassBySlug } from "@/server/catalogue/queries";
 import { getServerEnv } from "@/lib/env";
@@ -12,7 +14,10 @@ export default async function BookClassPage({ params }: { params: Promise<{ slug
   if (!slugSchema.safeParse(slug).success) notFound();
   const record = await getPublishedClassBySlug(slug).catch(() => null);
   if (!record) notFound();
-  if (!record.isBookingOpen) return <Section><Container className="max-w-2xl text-center"><p className="eyebrow text-[var(--fern)]">Booking unavailable</p><h1 className="display mt-4 text-5xl text-[var(--forest)]">This class can’t be booked right now.</h1><p className="mt-4 text-base leading-7 text-[var(--muted)]">Availability may have changed since you opened the page. Return to the class details for the current status.</p><div className="mt-8"><LinkButton href={`/classes/${record.slug}`} variant="secondary">Back to class details</LinkButton></div></Container></Section>;
+  const back = <Link href={`/classes/${record.slug}`} className="class-back-link focus-ring"><ArrowRight size={17} /> Back to class details</Link>;
+  if (!record.isBookingOpen) return <Section className="booking-page"><Container><header className="booking-heading">
+    {back}<h1>This class can’t be booked right now</h1><p>Check the class page for the current status.</p>
+  </header></Container></Section>;
   const bookingClass = {
     slug: record.slug,
     country: record.country,
@@ -27,10 +32,7 @@ export default async function BookClassPage({ params }: { params: Promise<{ slug
     professionalIdentifierRequired: record.professionalIdentifierRequired,
   };
   return <Section className="booking-page"><Container>
-    <LinkButton href={`/classes/${record.slug}`} variant="quiet">← Back to activity</LinkButton>
-    <PageIntro title="Complete your booking" className="booking-heading" />
-    <div className="booking-page-content">
-      <BookingForm classRecord={bookingClass} siteKey={getServerEnv().NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
-    </div>
+    <header className="booking-heading">{back}<h1>Complete your booking</h1></header>
+    <BookingForm classRecord={bookingClass} siteKey={getServerEnv().NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
   </Container></Section>;
 }

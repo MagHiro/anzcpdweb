@@ -1,6 +1,24 @@
 import Link from "next/link";
 import { getAdminPaymentRows } from "@/server/catalogue/queries";
-import { formatStatusLabel, Pagination, StatusBadge } from "@/components/ui";
+import { AdminRegister } from "@/components/admin-register";
+import { StatusBadge } from "@/components/ui";
 import { formatMoney } from "@/lib/utils";
 
-export default async function AdminPaymentsPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string; page?: string }> }) { const params = await searchParams; const page = Math.max(Number(params.page) || 1, 1); const rows = await getAdminPaymentRows({ search: params.search, status: params.status, page, pageSize: 50 }); const pageHref = (nextPage: number) => { const query = new URLSearchParams(); if (params.search) query.set("search", params.search); if (params.status) query.set("status", params.status); query.set("page", String(nextPage)); return `/admin/payments?${query.toString()}`; }; return <div><p className="eyebrow text-[var(--fern)]">Money movement</p><h1 className="display mt-3 text-5xl text-[var(--forest)]">Payments</h1><p className="mt-3 text-sm text-[var(--muted)]">Payment state is updated by Checkout and webhook events, not the success redirect.</p><form className="mt-8 flex flex-wrap gap-3 rounded-[1.2rem] border border-[var(--line)] bg-white p-4" method="get"><input aria-label="Search records" name="search" defaultValue={params.search} placeholder="Search attendee, email or class" className="focus-ring min-h-10 flex-1 rounded-lg border border-[var(--line)] px-3 text-sm" /><select aria-label="Filter by status" name="status" defaultValue={params.status ?? ""} className="focus-ring min-h-10 rounded-lg border border-[var(--line)] px-3 text-sm"><option value="">All payment states</option>{["PENDING", "PROCESSING", "SUCCEEDED", "FAILED", "PARTIALLY_REFUNDED", "REFUNDED"].map((status) => <option key={status} value={status}>{formatStatusLabel(status)}</option>)}</select><button className="focus-ring rounded-lg bg-[var(--forest)] px-4 text-sm font-bold text-white">Filter</button></form><div className="mt-6 overflow-x-auto rounded-xl border border-[var(--line)] bg-white"><table className="w-full min-w-[850px] text-left text-sm"><thead className="border-b border-[var(--line)] text-xs uppercase tracking-[.1em] text-[var(--muted)]"><tr><th scope="col" className="px-5 py-4">Attendee</th><th scope="col" className="px-5 py-4">Class</th><th scope="col" className="px-5 py-4">Captured</th><th scope="col" className="px-5 py-4">Refunded</th><th scope="col" className="px-5 py-4">Status</th></tr></thead><tbody className="divide-y divide-[var(--line)]">{rows.map((row) => <tr key={row.payment.id}><td data-label="Attendee" className="px-5 py-4"><Link href={`/admin/bookings/${row.payment.bookingId}`} className="font-semibold underline underline-offset-4">{row.attendee}</Link></td><td data-label="Class" className="px-5 py-4">{row.classTitle}</td><td data-label="Captured" className="px-5 py-4">{formatMoney(row.payment.amountCaptured, row.payment.currency)}</td><td data-label="Refunded" className="px-5 py-4">{formatMoney(row.payment.amountRefunded, row.payment.currency)}</td><td data-label="Status" className="px-5 py-4"><StatusBadge status={row.payment.status} /></td></tr>)}</tbody></table>{!rows.length ? <p className="p-10 text-center text-sm text-[var(--muted)]">No payments match those filters.</p> : null}</div><Pagination page={page} hasNext={rows.length === 50} previousHref={pageHref(page - 1)} nextHref={pageHref(page + 1)} /></div>; }
+export default async function AdminPaymentsPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string; page?: string }> }) {
+  const params = await searchParams;
+  const page = Math.min(Math.max(Math.floor(Number(params.page)) || 1, 1), 10_000);
+  const rows = await getAdminPaymentRows({ ...params, page, pageSize: 50 });
+  return <AdminRegister title="Payments" href="/admin/payments" search={params.search} status={params.status}
+    description="A return from checkout doesn’t confirm payment. Check the payment status here."
+    statuses={["PENDING", "PROCESSING", "SUCCEEDED", "FAILED", "PARTIALLY_REFUNDED", "REFUNDED"]}
+    placeholder="Search attendee, email or class" columns={["Attendee", "Class", "Amount paid", "Refunded", "Status"]}
+    count={rows.length} page={page} pageSize={50} empty="No payments match these filters.">
+    {rows.map(({ payment, attendee, classTitle }) => <tr key={payment.id}>
+      <td data-label="Attendee"><Link href={`/admin/bookings/${payment.bookingId}`} className="ink-link focus-ring">{attendee}</Link></td>
+      <td data-label="Class">{classTitle}</td>
+      <td data-label="Amount paid" className="tabular-nums">{formatMoney(payment.amountCaptured, payment.currency)}</td>
+      <td data-label="Refunded" className="tabular-nums">{formatMoney(payment.amountRefunded, payment.currency)}</td>
+      <td data-label="Status"><StatusBadge status={payment.status} /></td>
+    </tr>)}
+  </AdminRegister>;
+}

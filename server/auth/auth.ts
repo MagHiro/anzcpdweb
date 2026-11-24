@@ -7,6 +7,7 @@ import { getDb } from "@/lib/db";
 import { getServerEnv } from "@/lib/env";
 import { queueEmail } from "@/server/email/service";
 import { linkVerifiedEmailBookings } from "@/server/auth/tokens";
+import { REMEMBERED_SESSION_SECONDS } from "@/lib/session-duration";
 
 const env = getServerEnv();
 
@@ -29,7 +30,7 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7,
+    expiresIn: REMEMBERED_SESSION_SECONDS,
     disableSessionRefresh: true,
   },
   databaseHooks: {
@@ -38,7 +39,7 @@ export const auth = betterAuth({
       // sessions created after a successful second-factor challenge.
       const shortSession = session.expiresAt.getTime() - Date.now() <= 86400000 + 5000;
       const previousExpiry = context?.context.session?.session.expiresAt;
-      const expiresAt = previousExpiry ? new Date(Math.min(new Date(previousExpiry).getTime(), session.expiresAt.getTime())) : new Date(Date.now() + (shortSession ? 3600 : 7 * 86400) * 1000);
+      const expiresAt = previousExpiry ? new Date(Math.min(new Date(previousExpiry).getTime(), session.expiresAt.getTime())) : new Date(Date.now() + (shortSession ? 3600 : REMEMBERED_SESSION_SECONDS) * 1000);
       return { data: { ...session, expiresAt } };
     } } },
   },

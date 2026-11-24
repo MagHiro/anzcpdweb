@@ -1,5 +1,6 @@
 "use client";
 import { ConfirmForm } from "@/components/confirm-form";
+import { ClassDescriptionEditor } from "@/components/class-description-editor";
 import { MoneyInput } from "@/components/money-input";
 import { SlugInput } from "@/components/slug-input";
 
@@ -119,7 +120,7 @@ export function AdminClassForm({ classRecord, categories, presenters: presenterO
       <Field label="Category" required error={state.fieldErrors?.categoryId}><Select name="categoryId" defaultValue={classRecord?.categoryId ?? ""} required><option value="">Select category</option>{categories.filter((category) => category.country === country).map((category) => <option key={category.id} value={category.id}>{category.name}{category.isActive && category.visibility === "VISIBLE" ? "" : " (archived)"}</option>)}</Select></Field>
       <Field label="Presenter" hint="Optional. Assign one presenter to this class."><Select name="presenterId" defaultValue={classRecord?.presenterId ?? ""}><option value="">No presenter assigned</option>{presenterOptions.map((presenter) => <option key={presenter.id} value={presenter.id}>{presenter.name}{presenter.isActive ? "" : " (archived)"}</option>)}</Select></Field>
       <Field label="Short description" required error={state.fieldErrors?.shortDescription} className="sm:col-span-2"><TextArea name="shortDescription" defaultValue={classRecord?.shortDescription} className="min-h-24" required /></Field>
-      <Field label="Full description" hint="Plain text is rendered safely. Avoid copying large third-party source passages." required error={state.fieldErrors?.fullDescription} className="sm:col-span-2"><TextArea name="fullDescription" defaultValue={classRecord?.fullDescription} required className="min-h-40" /></Field>
+      <ClassDescriptionEditor key={classRecord?.id ?? "new"} initialText={classRecord?.fullDescription} error={state.fieldErrors?.fullDescription} />
     </div></section>
     <section id="editor-1" className="rounded-xl border border-[var(--line)] bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Schedule and delivery</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
       <Field label="Timezone" required><Select name="timezone" defaultValue={timezone}><option>Australia/Sydney</option><option>Australia/Melbourne</option><option>Australia/Brisbane</option><option>Australia/Adelaide</option><option>Australia/Perth</option><option>Pacific/Auckland</option></Select></Field>

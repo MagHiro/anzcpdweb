@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { SignOutButton } from "@/components/auth-form";
 import { AdminFeedback } from "@/components/admin-feedback";
-import gsap from "gsap";
+import { ArrowUpRight, CloseIcon, MenuIcon } from "@/components/icon";
 import "@/components/admin-workspace.css";
 
 type NavItem = { href: string; label: string; icon: "grid" | "book" | "users" | "calendar" | "money" | "settings" | "file" | "shield" | "message" | "spark" };
@@ -17,8 +17,8 @@ const adminGroups: NavGroup[] = [
   { label: "System", links: [{ href: "/admin/audit-log", label: "Audit log", icon: "shield" }, { href: "/admin/settings", label: "Settings", icon: "settings" }] },
 ];
 const accountGroups: NavGroup[] = [
-  { label: "Your learning", links: [{ href: "/account", label: "Overview", icon: "grid" }, { href: "/account/bookings", label: "My bookings", icon: "calendar" }, { href: "/account/support", label: "Support", icon: "message" }] },
-  { label: "Your account", links: [{ href: "/account/profile", label: "Profile", icon: "users" }, { href: "/account/security", label: "Security", icon: "shield" }] },
+  { label: "", links: [{ href: "/account", label: "Overview", icon: "grid" }, { href: "/account/bookings", label: "Bookings", icon: "calendar" }] },
+  { label: "Settings", links: [{ href: "/account/profile", label: "Profile", icon: "users" }, { href: "/account/security", label: "Security", icon: "shield" }] },
 ];
 const paths: Record<NavItem["icon"], ReactNode> = {
   grid: <><rect x="3.8" y="3.8" width="6.5" height="6.5" rx="1.4" /><rect x="13.7" y="3.8" width="6.5" height="6.5" rx="1.4" /><rect x="3.8" y="13.7" width="6.5" height="6.5" rx="1.4" /><rect x="13.7" y="13.7" width="6.5" height="6.5" rx="1.4" /></>,
@@ -38,28 +38,37 @@ function NavGlyph({ name }: { name: NavItem["icon"] }) {
 
 export function Workspace({ children, name, admin = false }: { children: ReactNode; name: string; admin?: boolean }) {
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const content = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const motion = gsap.matchMedia();
-    motion.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.fromTo(content.current, { opacity: .5, y: 6 }, { opacity: 1, y: 0, duration: .18, ease: "power2.out", clearProps: "all" });
-    });
-    return () => motion.revert();
-  }, [pathname]);
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const menuOpen = menuPath === pathname;
+  const toggle = useRef<HTMLButtonElement>(null);
+  const content = useRef<HTMLElement>(null);
   const groups = admin ? adminGroups : accountGroups;
   const active = (href: string) => pathname === href || (href !== "/admin" && href !== "/account" && pathname.startsWith(href + "/"));
-  const current = groups.flatMap(g => g.links).find(item => active(item.href) && (item.href !== "/admin" && item.href !== "/account")) ?? groups[0].links[0];
+  const current = !admin && active("/account/support")
+    ? { label: "Support", icon: "message" as const }
+    : groups.flatMap(g => g.links).find(item => active(item.href)) ?? groups[0].links[0];
   return <AdminFeedback><div className={"workspace " + (admin ? "workspace-admin" : "workspace-account")}>
     <a href="#workspace-main" className="workspace-skip">Skip to content</a>
-    <aside className="workspace-sidebar">
-      <Link href="/" className="workspace-brand focus-ring"><span className="workspace-symbol" aria-hidden="true">A<span>↗</span></span><span className="workspace-brand-label">ANZ Academy<small>{admin ? "Administration" : "My account"}</small></span></Link>
-      <button type="button" className="workspace-menu-toggle focus-ring" aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen(value => !value)}>{menuOpen ? "Close menu ×" : "Menu ☰"}</button>
-      <nav id="workspace-navigation" data-open={menuOpen} aria-label={admin ? "Administration" : "Account"}>{groups.map(group => <details className="workspace-nav-group" key={group.label} open><summary>{group.label}</summary>{group.links.map(item => <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} aria-current={active(item.href) ? "page" : undefined}><NavGlyph name={item.icon} /><span>{item.label}</span>{active(item.href) && <span className="workspace-active-dot" aria-hidden="true" />}</Link>)}</details>)}</nav>
-      <div className="workspace-identity"><span className="identity-avatar" aria-hidden="true">{name.trim().split(/\s+/).filter(Boolean).filter((_, index, words) => index === 0 || index === words.length - 1).map(word => word[0]).join("").toUpperCase()}</span><div><p title={name}>{name}</p><SignOutButton /></div></div>
+    <aside className="workspace-sidebar" onKeyDown={event => {
+      if (event.key === "Escape" && menuOpen) { setMenuPath(null); toggle.current?.focus(); }
+    }}>
+      <div className="workspace-sidebar-header">
+        <Link href={admin ? "/admin" : "/account"} className="workspace-brand focus-ring">
+          <span className="workspace-symbol" aria-hidden="true"><svg viewBox="0 0 48 48" width="26" height="26" fill="currentColor"><path d="M9 34V14h8l7 12 7-12h8v20h-7V24l-8 12-8-12v10H9Z" /><path d="M10 8h28" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" /></svg></span>
+          <span className="workspace-brand-label">ANZ Migration Academy<small>{admin ? "Administration" : "My account"}</small></span>
+        </Link>
+        <button ref={toggle} type="button" className="workspace-menu-toggle focus-ring" aria-expanded={menuOpen} aria-controls="workspace-menu" onClick={() => setMenuPath(menuOpen ? null : pathname)}>{menuOpen ? <CloseIcon /> : <MenuIcon />}<span>{menuOpen ? "Close" : "Menu"}</span></button>
+      </div>
+      <div id="workspace-menu" className="workspace-menu" data-open={menuOpen}>
+        <nav aria-label={admin ? "Administration" : "Account"}>{groups.map(group => <div className="workspace-nav-group" key={group.label}>
+          {group.label && <p>{group.label}</p>}
+          {group.links.map(item => <Link key={item.href} href={item.href} className="focus-ring" onClick={() => { setMenuPath(null); if (menuOpen) content.current?.focus(); }} aria-current={pathname === item.href ? "page" : active(item.href) ? "location" : undefined}><NavGlyph name={item.icon} /><span>{item.label}</span></Link>)}
+        </div>)}</nav>
+        <div className="workspace-identity"><span className="identity-avatar" aria-hidden="true">{name.trim().split(/\s+/).filter(Boolean).filter((_, index, words) => index === 0 || index === words.length - 1).map(word => word[0]).join("").toUpperCase()}</span><div><p title={name}>{name}</p><SignOutButton /></div></div>
+      </div>
     </aside>
     <div className="workspace-body">
-      <header className="workspace-topbar"><div><span className="workspace-location">{admin ? "Administration" : "My learning"} / <strong>{current.label}</strong></span></div><Link href="/classes">Explore CPD activities <span aria-hidden="true">↗</span></Link></header>
+      <header className="workspace-topbar"><div className="workspace-location"><NavGlyph name={current.icon} /><span>{!admin && pathname.startsWith("/account/bookings/") ? "Booking details" : current.label}</span></div><Link href={admin ? "/" : "/classes"} className="workspace-public-link focus-ring">{admin ? "View website" : "Browse classes"} <ArrowUpRight size={14} /></Link></header>
       <main id="workspace-main" tabIndex={-1} ref={content} className="workspace-content">{children}</main>
       <footer className="workspace-footer"><span>ANZ Migration Academy</span><span>Need support? <Link href="/complaints">Complaints</Link> · <a href="mailto:info@anzmigrationacademy.com">Contact the academy</a></span></footer>
     </div>

@@ -51,6 +51,8 @@ Create a PostgreSQL database and set `DATABASE_URL`. Set a random `BETTER_AUTH_S
 
 ## Local startup
 
+Set `APP_URL` to the exact address you open in your browser (by default, `http://localhost:3000`). Sign-in and registration reject requests if the hostname or port differs. Restart the dev server after changing `APP_URL`.
+
 ```bash
 pnpm db:migrate
 pnpm db:seed

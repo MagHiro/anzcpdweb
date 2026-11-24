@@ -8,6 +8,7 @@ import { uuidSchema } from "@/lib/validation";
 import { and, eq } from "drizzle-orm";
 import { auditLogs } from "@/db/schema";
 import { getDb } from "@/lib/db";
+import { AdminPageHeading } from "@/components/admin-page-heading";
 
 export default async function AdminBookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,12 +20,12 @@ export default async function AdminBookingDetailPage({ params }: { params: Promi
   const [verification] = await getDb().select().from(auditLogs).where(and(eq(auditLogs.entityId, id), eq(auditLogs.action, "ADMIN_PAYMENT_VERIFIED"))).limit(1);
   const verificationMetadata = verification?.metadata as { reference?: string } | undefined;
   return <div className="admin-booking-detail">
-    <Link href="/admin/bookings" className="class-back-link focus-ring">← All bookings</Link>
-    <header className="booking-detail-heading"><div><h1 className="display">{row.booking.fullName}</h1><a href={`mailto:${row.booking.email}`} className="booking-customer-email focus-ring">{row.booking.email}</a></div><StatusBadge status={row.booking.status} /></header>
+    <AdminPageHeading title={row.booking.fullName} back={{ href: "/admin/bookings", label: "All bookings" }}>
+      <div className="admin-record-meta"><StatusBadge status={row.booking.status} /><span>{makePublicBookingReference(row.booking.id)}</span><a href={`mailto:${row.booking.email}`} className="focus-ring ink-link">{row.booking.email}</a></div>
+    </AdminPageHeading>
     <div className="booking-detail-grid">
       <section className="admin-detail-panel"><h2>Booking details</h2><dl className="booking-record-fields">
-        <div><dt>Reference</dt><dd>{makePublicBookingReference(row.booking.id)}</dd></div>
-        <div><dt>Activity</dt><dd>{row.classTitle}</dd></div>
+        <div><dt>Class</dt><dd><Link href={`/admin/classes/${row.booking.classId}`} className="ink-link focus-ring">{row.classTitle}</Link></dd></div>
         <div><dt>Country</dt><dd>{row.booking.country === "AU" ? "Australia" : "New Zealand"}</dd></div>
         <div><dt>Professional identifier</dt><dd>{row.booking.professionalIdentifier ? `${row.booking.professionalIdentifierType ?? ""} ${row.booking.professionalIdentifier}`.trim() : "Not supplied"}</dd></div>
         <div><dt>Price at booking</dt><dd>{formatMoney(row.booking.amountSnapshot, row.booking.currencySnapshot)}</dd></div>

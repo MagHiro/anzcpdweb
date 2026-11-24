@@ -28,7 +28,7 @@ test("My account is a working account link", async ({ page }) => {
   await expect(account).toHaveAttribute("href", "/account");
   await account.click();
   await expect(page).toHaveURL(/\/sign-in\?next=/);
-  await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
 });
 
 test("password visibility control has an explicit transparent surface", async ({ page }) => {

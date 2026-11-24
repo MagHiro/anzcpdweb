@@ -1,6 +1,23 @@
 import Link from "next/link";
 import { getAdminRefundRows } from "@/server/catalogue/queries";
-import { formatStatusLabel, Pagination, StatusBadge } from "@/components/ui";
+import { AdminRegister } from "@/components/admin-register";
+import { StatusBadge } from "@/components/ui";
 import { formatMoney } from "@/lib/utils";
 
-export default async function AdminRefundsPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string; page?: string }> }) { const params = await searchParams; const page = Math.max(Number(params.page) || 1, 1); const rows = await getAdminRefundRows({ search: params.search, status: params.status, page, pageSize: 50 }); const pageHref = (nextPage: number) => { const query = new URLSearchParams(); if (params.search) query.set("search", params.search); if (params.status) query.set("status", params.status); query.set("page", String(nextPage)); return `/admin/refunds?${query.toString()}`; }; return <div><p className="eyebrow text-[var(--fern)]">Money movement</p><h1 className="display mt-3 text-5xl text-[var(--forest)]">Refunds</h1><p className="mt-3 text-sm text-[var(--muted)]">A request can be pending or failed. Stripe events synchronize the final state.</p><form className="mt-8 flex flex-wrap gap-3 rounded-[1.2rem] border border-[var(--line)] bg-white p-4" method="get"><input aria-label="Search records" name="search" defaultValue={params.search} placeholder="Search attendee, email, class or reason" className="focus-ring min-h-10 flex-1 rounded-lg border border-[var(--line)] px-3 text-sm" /><select aria-label="Filter by status" name="status" defaultValue={params.status ?? ""} className="focus-ring min-h-10 rounded-lg border border-[var(--line)] px-3 text-sm"><option value="">All refund states</option>{["PENDING", "SUCCEEDED", "FAILED", "REQUIRES_ACTION", "CANCELLED"].map((status) => <option key={status} value={status}>{formatStatusLabel(status)}</option>)}</select><button className="focus-ring rounded-lg bg-[var(--forest)] px-4 text-sm font-bold text-white">Filter</button></form><div className="mt-6 overflow-x-auto rounded-xl border border-[var(--line)] bg-white"><table className="w-full min-w-[850px] text-left text-sm"><thead className="border-b border-[var(--line)] text-xs uppercase tracking-[.1em] text-[var(--muted)]"><tr><th scope="col" className="px-5 py-4">Booking</th><th scope="col" className="px-5 py-4">Class</th><th scope="col" className="px-5 py-4">Amount</th><th scope="col" className="px-5 py-4">Reason</th><th scope="col" className="px-5 py-4">Status</th></tr></thead><tbody className="divide-y divide-[var(--line)]">{rows.map((row) => <tr key={row.refund.id}><td data-label="Booking" className="px-5 py-4"><Link href={`/admin/bookings/${row.refund.bookingId}`} className="font-bold text-[var(--forest)] underline underline-offset-4">{row.attendee}</Link><span className="block text-xs text-[var(--muted)]">{row.bookingReference}</span></td><td data-label="Class" className="px-5 py-4">{row.classTitle}</td><td data-label="Amount" className="px-5 py-4">{formatMoney(row.refund.amount, row.refund.currency)}</td><td data-label="Reason" className="px-5 py-4">{row.refund.reason}</td><td data-label="Status" className="px-5 py-4"><StatusBadge status={row.refund.status} /></td></tr>)}</tbody></table>{!rows.length ? <p className="p-10 text-center text-sm text-[var(--muted)]">No refunds match those filters.</p> : null}</div><Pagination page={page} hasNext={rows.length === 50} previousHref={pageHref(page - 1)} nextHref={pageHref(page + 1)} /></div>; }
+export default async function AdminRefundsPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string; page?: string }> }) {
+  const params = await searchParams;
+  const page = Math.min(Math.max(Math.floor(Number(params.page)) || 1, 1), 10_000);
+  const rows = await getAdminRefundRows({ ...params, page, pageSize: 50 });
+  return <AdminRegister title="Refunds" href="/admin/refunds" search={params.search} status={params.status}
+    statuses={["PENDING", "SUCCEEDED", "FAILED", "REQUIRES_ACTION", "CANCELLED"]}
+    placeholder="Search attendee, email, class or reason" columns={["Booking", "Class", "Amount", "Reason", "Status"]}
+    count={rows.length} page={page} pageSize={50} empty="No refunds match these filters.">
+    {rows.map(({ refund, attendee, bookingReference, classTitle }) => <tr key={refund.id}>
+      <td data-label="Booking"><Link href={`/admin/bookings/${refund.bookingId}`} className="ink-link focus-ring">{attendee}</Link><small>{bookingReference}</small></td>
+      <td data-label="Class">{classTitle}</td>
+      <td data-label="Amount" className="tabular-nums">{formatMoney(refund.amount, refund.currency)}</td>
+      <td data-label="Reason">{refund.reason}</td>
+      <td data-label="Status"><StatusBadge status={refund.status} /></td>
+    </tr>)}
+  </AdminRegister>;
+}

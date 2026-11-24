@@ -3,11 +3,11 @@ import type { SVGProps } from "react";
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
 export function ArrowUpRight({ size = 18, ...props }: IconProps) {
-  return <svg aria-hidden="true" fill="none" height={size} viewBox="0 0 24 24" width={size} {...props}><path d="M7 17 17 7M8 7h9v9" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" /></svg>;
+  return <svg aria-hidden="true" fill="none" height={size} viewBox="0 0 24 24" width={size} stroke="currentColor" strokeWidth="1.5" {...props}><path d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
 export function ArrowRight({ size = 18, ...props }: IconProps) {
-  return <svg aria-hidden="true" fill="none" height={size} viewBox="0 0 24 24" width={size} {...props}><path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" /></svg>;
+  return <svg aria-hidden="true" fill="none" height={size} viewBox="0 0 24 24" width={size} {...props}><path d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" /></svg>;
 }
 
 export function Phone({ size = 18, ...props }: IconProps) {

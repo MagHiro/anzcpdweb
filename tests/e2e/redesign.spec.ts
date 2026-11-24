@@ -4,7 +4,7 @@ for (const path of ["/admin", "/admin/payments", "/account", "/account/bookings"
   test(`${path} still requires sign-in`, async ({ page }) => {
     await page.goto(path);
     await expect(page).toHaveURL(/\/sign-in\?next=/);
-    await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
   });
 }
 
@@ -38,17 +38,32 @@ test("account setup is accessible without a session and explains missing links",
 
 test("payment return never claims a confirmed booking", async ({ page }) => {
   await page.goto("/booking/success");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("We’re confirming your booking.");
-  await expect(page.getByText(/do not pay again/)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("We’re checking your payment");
+  await expect(page.getByText(/Don’t pay twice/)).toBeVisible();
 });
 
 test("mobile menu closes with Escape and restores focus", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 820, height: 844 });
   await page.goto("/");
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await expect(page.getByRole("navigation").first()).toBeVisible();
+  const nav = page.getByRole("navigation", { name: "Main navigation", includeHidden: true });
+  const trigger = page.getByRole("button", { name: "Open menu" });
+  await expect(nav).toBeHidden();
+  await trigger.click();
+  await expect(nav).toBeVisible();
+  await page.keyboard.press("Shift+Tab");
+  await expect(nav.getByRole("link", { name: "My account" })).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Open menu" })).toBeFocused();
+  await expect(trigger).toBeFocused();
+  await expect(nav).toBeHidden();
+  await trigger.click();
+  await page.setViewportSize({ width: 901, height: 844 });
+  await expect(nav).toBeVisible();
+  await expect(page.getByRole("button", { name: /menu/i })).toBeHidden();
+  await expect(page.locator("body")).not.toHaveCSS("overflow", "hidden");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(nav).toBeHidden();
+  await trigger.click();
+  await expect(nav).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

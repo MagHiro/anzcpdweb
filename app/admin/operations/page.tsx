@@ -6,6 +6,7 @@ import { requireAdminSession } from "@/server/auth/session";
 import { formatMoney, makePublicBookingReference } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui";
 import { ReconciliationForm } from "@/components/reconciliation-form";
+import { AdminPageHeading } from "@/components/admin-page-heading";
 
 export default async function OperationsPage() {
   await requireAdminSession();
@@ -18,8 +19,7 @@ export default async function OperationsPage() {
     db.select().from(auditLogs).where(eq(auditLogs.action, "CAPTURE_REQUIRES_RECONCILIATION")).orderBy(sql`${auditLogs.createdAt} desc`).limit(30),
   ]);
   return <div className="operations-page">
-    <div className="admin-page-heading"><h1 className="display">Operational queues</h1></div>
-    <p className="operations-note">Oldest first · Up to 100 items per queue. Stripe checks reconcile payment state without charging customers or initiating refunds.</p>
+    <AdminPageHeading title="Queues" description="Checking Stripe updates payment records. It does not charge customers or issue refunds." />
     <div className="operations-grid">
     <section><h2 className="text-2xl">Payments requiring review</h2><p className="mt-2 text-sm text-[var(--muted)]">Cancelled bookings with an unrefunded balance, or unresolved checkouts older than 45 minutes.</p><div className="mt-5 divide-y divide-[var(--line)]">{paymentRows.length ? paymentRows.map(({ booking, payment }) => <div key={booking.id} className="flex flex-wrap items-start justify-between gap-5 py-6"><div className="min-w-0"><Link className="ink-link" href={`/admin/bookings/${booking.id}`}>{makePublicBookingReference(booking.id)}</Link><p className="mt-2 break-words">{booking.fullName} · {booking.classTitleSnapshot}</p><p className="mt-2 text-sm text-[var(--muted)]">Captured {formatMoney(payment.amountCaptured, payment.currency)} · Refunded {formatMoney(payment.amountRefunded, payment.currency)}</p><div className="mt-3 flex gap-2"><StatusBadge status={booking.status} /><StatusBadge status={payment.status} /></div></div>{booking.stripeCheckoutSessionId && <ReconciliationForm bookingId={booking.id} />}</div>) : <p className="py-6 text-sm text-[var(--muted)]">No payments requiring review.</p>}</div></section>
     <section><h2 className="text-2xl">Refund follow-up</h2><div className="mt-5 divide-y divide-[var(--line)]">{refundRows.length ? refundRows.map(refund => <div key={refund.id} className="flex flex-wrap justify-between gap-4 py-5"><Link className="ink-link" href={`/admin/bookings/${refund.bookingId}`}>{makePublicBookingReference(refund.bookingId)} · {formatMoney(refund.amount, refund.currency)}</Link><StatusBadge status={refund.status} /><ReconciliationForm bookingId={refund.bookingId} /></div>) : <p className="py-6 text-sm text-[var(--muted)]">No refunds requiring follow-up.</p>}</div></section>

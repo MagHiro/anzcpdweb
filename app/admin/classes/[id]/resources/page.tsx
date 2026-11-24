@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { uuidSchema } from "@/lib/validation";
 import { formatDateTime } from "@/lib/utils";
 import { getAdminClassById } from "@/server/catalogue/queries";
 import { getClassResources } from "@/server/bookings/resources";
 import { AdminClassNav } from "@/components/admin-class-nav";
+import { AdminPageHeading } from "@/components/admin-page-heading";
 import { ClassResourceManager } from "@/components/class-resource-manager";
 import { AdminResourceEmail } from "@/components/admin-resource-email";
 import { resourceReadiness } from "@/server/email/resource-readiness";
@@ -21,11 +21,11 @@ export default async function ClassResourcesPage({ params }: { params: Promise<{
   const resources = await getClassResources(id);
   const participants = await getDb().select({ email: bookings.email, fullName: bookings.fullName }).from(bookings).where(and(eq(bookings.classId, id), inArray(bookings.status, ["CONFIRMED", "PARTIALLY_REFUNDED"])));
   return <div>
-    <Link href="/admin/classes" className="ink-link">← All classes</Link>
-    <h1 className="display mt-6 text-4xl text-[var(--forest)]">{row.class.title}</h1>
-    <p className="mt-3 text-sm text-[var(--muted)]">{formatDateTime(row.class.startAt, row.class.timezone)} · {row.class.timezone}</p>
+    <AdminPageHeading title={row.class.title} back={{ href: "/admin/classes", label: "All classes" }} description={`${formatDateTime(row.class.startAt, row.class.timezone)} · ${row.class.timezone}`} />
     <AdminClassNav classId={id} current="resources" />
-    <ClassResourceManager classId={id} resources={resources.map(({ id, title, kind, published, objectKey }) => ({ id, title, kind, published, objectKey }))} />
-    <AdminResourceEmail classId={id} recipientCount={uniqueClassRecipients(participants).length} ready={await resourceReadiness(resources)} />
+    <div className="admin-resource-layout">
+      <ClassResourceManager classId={id} resources={resources.map(({ id, title, kind, published, objectKey }) => ({ id, title, kind, published, objectKey }))} />
+      <AdminResourceEmail classId={id} recipientCount={uniqueClassRecipients(participants).length} ready={await resourceReadiness(resources)} />
+    </div>
   </div>;
 }

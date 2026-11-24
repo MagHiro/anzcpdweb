@@ -1,0 +1,65 @@
+.workspace-admin .workspace-content { container-type: inline-size; }
+.admin-record-heading { padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.admin-record-heading-row { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px 24px; }
+.admin-record-heading-text { flex: 1 1 300px; min-width: 0; }
+.workspace-admin .admin-record-heading h1.display { color: var(--forest); font-size: clamp(32px, 4vw, 56px); line-height: 1.04; font-weight: 500; letter-spacing: -.045em; overflow-wrap: anywhere; text-wrap: pretty; }
+.admin-record-heading-text > p { max-width: 70ch; margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.admin-record-heading-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.admin-record-heading-actions svg { flex: none; }
+.admin-record-heading-detail { padding: clamp(16px, 3vw, 30px); border: 1px solid var(--line); border-radius: 16px; background: var(--mist); }
+.admin-record-heading-detail .admin-record-heading-text { flex-basis: 380px; }
+.workspace-admin .admin-record-heading-detail h1.display { font-size: clamp(28px, 3.6vw, 46px); }
+.admin-record-back { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; margin: -4px 0 8px; font-size: 13px; }
+.admin-record-back svg { transform: rotate(180deg); }
+.admin-record-back:hover { text-decoration: underline; text-underline-offset: 4px; }
+.admin-record-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 12px; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.admin-record-tabs { display: flex; flex-wrap: wrap; gap: 0 20px; margin-block: 14px 20px; border-bottom: 1px solid var(--line); }
+.admin-record-tabs a { display: inline-flex; align-items: center; min-height: 44px; padding: 6px 4px; border-bottom: 2px solid transparent; font-size: 14px; color: var(--muted); }
+.admin-record-tabs a:hover { color: var(--forest); }
+.admin-record-tabs a[aria-current] { border-color: var(--forest); color: var(--forest); font-weight: 600; }
+
+.workspace-admin .workspace-content .overflow-x-auto:has(table) { border: 1px solid var(--line); border-radius: 14px; box-shadow: none; }
+.workspace-admin .workspace-content table thead { background: var(--mist); }
+.workspace-admin .workspace-content table th { padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 13px; letter-spacing: normal; white-space: nowrap; }
+.workspace-admin .workspace-content table td { vertical-align: top; padding: 14px 16px; overflow-wrap: anywhere; }
+.workspace-admin .workspace-content table tbody tr + tr { border-top: 1px solid var(--line); }
+.workspace-admin .workspace-content table tbody tr:hover { background: #f6faf7; }
+.workspace-admin .workspace-content :is(.admin-list-filters, .admin-booking-filters) { margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; box-shadow: none; }
+.admin-register-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+.admin-register-filters input { flex: 1 1 230px; min-width: 0; }
+.admin-filter-clear { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 10px; font-size: 14px; text-decoration: underline; text-underline-offset: 4px; }
+.admin-register-table { margin-top: 16px; }
+.admin-register-table table { width: 100%; min-width: 700px; text-align: left; font-size: 14px; }
+.admin-register-table td small { display: block; margin-top: 4px; color: var(--muted); }
+.admin-register-empty { padding: 24px 16px; color: var(--muted); font-size: 14px; }
+
+.workspace-admin .booking-detail-grid { margin-top: 20px; }
+.workspace-admin :is(.admin-detail-panel, .operations-grid > section, .audit-activity-list, .admin-source-list, .class-editor-fields > section, .admin-resource-layout > section) { border: 1px solid var(--line); border-radius: 16px; box-shadow: none; }
+.workspace-admin :is(.audit-activity-row, .admin-source-row) { padding: clamp(14px, 2vw, 22px); }
+.workspace-admin .audit-activity-header time { color: var(--forest); font-variant-numeric: tabular-nums; }
+.workspace-admin .class-editor-save { border: 1px solid var(--line); border-radius: 12px; }
+.workspace-admin .class-editor > nav[aria-label="Class editor sections"] a { border-radius: 8px; }
+.workspace-admin .booking-payment-totals > div { border-radius: 12px; }
+.admin-resource-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; gap: 18px; }
+.admin-resource-layout > section { min-width: 0; margin-top: 0; overflow-wrap: anywhere; }
+.admin-settings-checks { max-width: 52rem; margin-top: 20px; padding: clamp(16px, 3vw, 28px); border: 1px solid var(--line); border-radius: 16px; background: white; }
+.admin-settings-checks h2, .admin-procedure-layout h2 { color: var(--forest); font-family: var(--font-display), sans-serif; font-size: 23px; font-weight: 500; }
+.admin-settings-checks dl { margin-top: 12px; }
+.admin-settings-checks dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; padding-block: 12px; border-top: 1px solid var(--line); font-size: 14px; }
+.admin-procedure-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); align-items: start; gap: 24px; margin-top: 22px; }
+.admin-procedure-layout ol { margin-top: 12px; }
+.admin-procedure-layout li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding-block: 14px; border-top: 1px solid var(--line); }
+.admin-procedure-layout li > span { display: grid; place-items: center; height: 34px; border-radius: 8px; background: var(--mist); color: var(--forest); font-weight: 500; }
+.admin-procedure-layout h3 { font-size: 16px; font-weight: 600; }
+.admin-procedure-layout p { margin-top: 6px; color: var(--muted); font-size: 14px; line-height: 1.65; }
+.admin-procedure-layout aside { padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--mist); }
+.admin-procedure-layout aside a { display: inline-block; margin-top: 14px; font-size: 14px; }
+
+@container (max-width: 760px) {
+  .admin-resource-layout, .admin-procedure-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .workspace-admin .workspace-content table td[data-label] { padding: 8px 12px; }
+  .admin-register-table table { min-width: 0; }
+  .admin-register-table td[data-label] { grid-template-columns: minmax(72px, 32%) minmax(0, 1fr); }
+}

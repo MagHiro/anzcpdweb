@@ -5,6 +5,7 @@ import { AdminClassActions, AdminClassForm } from "@/components/admin-forms";
 import { StatusBadge } from "@/components/ui";
 import { uuidSchema } from "@/lib/validation";
 import { AdminClassNav } from "@/components/admin-class-nav";
+import { AdminPageHeading } from "@/components/admin-page-heading";
 
 export default async function AdminClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,11 +18,9 @@ export default async function AdminClassDetailPage({ params }: { params: Promise
   ]);
   const { sources, selectedIds } = sourceOptions;
   return <div className="class-detail-editor">
-    <Link href="/admin/classes" className="class-back-link focus-ring">← All classes</Link>
-    <header className="class-editor-heading">
-      <div className="min-w-0"><h1 className="display">{row.class.title}</h1><div className="class-editor-meta"><StatusBadge status={row.class.status} /><span>{row.class.country === "AU" ? "Australia" : "New Zealand"} · {row.categoryName}</span></div></div>
-      <div className="class-editor-actions"><AdminClassActions classRecord={row.class} /></div>
-    </header>
+    <AdminPageHeading title={row.class.title} back={{ href: "/admin/classes", label: "All classes" }} actions={<div className="class-editor-actions"><AdminClassActions classRecord={row.class} /></div>}>
+      <div className="class-editor-meta"><StatusBadge status={row.class.status} /><span>{row.class.country === "AU" ? "Australia" : "New Zealand"} · {row.categoryName}</span></div>
+    </AdminPageHeading>
     <AdminClassNav classId={id} current="details" />
     {affectedBookings.length > 0 && <aside className="class-booking-notice" aria-label="Affected bookings">
       <p>Status changes do not automatically refund attendees. Review bookings and use the refund workflow where needed.</p>

@@ -1,4 +1,19 @@
 import { getAdminCustomerRows } from "@/server/catalogue/queries";
-import { Pagination, StatusBadge } from "@/components/ui";
+import { AdminRegister } from "@/components/admin-register";
+import { StatusBadge } from "@/components/ui";
 
-export default async function AdminCustomersPage({ searchParams }: { searchParams: Promise<{ search?: string; page?: string }> }) { const params = await searchParams; const page = Math.max(Number(params.page) || 1, 1); const rows = await getAdminCustomerRows(params.search, page, 25); const pageHref = (nextPage: number) => `/admin/customers?${new URLSearchParams({ ...(params.search ? { search: params.search } : {}), page: String(nextPage) }).toString()}`; return <div><p className="eyebrow text-[var(--fern)]">People</p><h1 className="display mt-3 text-5xl text-[var(--forest)]">Customers</h1><form className="mt-8 flex gap-3 rounded-[1.2rem] border border-[var(--line)] bg-white p-4" method="get"><input aria-label="Search customers" className="focus-ring min-h-10 flex-1 rounded-lg border border-[var(--line)] px-3 text-sm" name="search" defaultValue={params.search} placeholder="Search email" /><button className="focus-ring rounded-lg bg-[var(--forest)] px-4 text-sm font-bold text-white">Search</button></form><div className="mt-6 overflow-x-auto rounded-xl border border-[var(--line)] bg-white"><table className="w-full min-w-[700px] text-left text-sm"><thead className="border-b border-[var(--line)] text-xs uppercase tracking-[.1em] text-[var(--muted)]"><tr><th scope="col" className="px-5 py-4">Customer</th><th scope="col" className="px-5 py-4">Verified</th><th scope="col" className="px-5 py-4">Bookings</th><th scope="col" className="px-5 py-4">Joined</th></tr></thead><tbody className="divide-y divide-[var(--line)]">{rows.map((row) => <tr key={row.id}><td data-label="Customer" className="px-5 py-4"><p className="font-bold text-[var(--forest)]">{row.name}</p><p className="text-xs text-[var(--muted)]">{row.email}</p></td><td data-label="Verified" className="px-5 py-4"><StatusBadge status={row.emailVerified ? "VERIFIED" : "UNVERIFIED"} /></td><td data-label="Bookings" className="px-5 py-4">{row.bookingCount}</td><td data-label="Joined" className="px-5 py-4 text-xs text-[var(--muted)]">{new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(row.createdAt)}</td></tr>)}</tbody></table>{!rows.length && <p className="p-8 text-center text-sm text-[var(--muted)]">No customers match your search. Try a different email address.</p>}</div><Pagination page={page} hasNext={rows.length === 25} previousHref={pageHref(page - 1)} nextHref={pageHref(page + 1)} /></div>; }
+export default async function AdminCustomersPage({ searchParams }: { searchParams: Promise<{ search?: string; page?: string }> }) {
+  const params = await searchParams;
+  const page = Math.min(Math.max(Math.floor(Number(params.page)) || 1, 1), 10_000);
+  const rows = await getAdminCustomerRows(params.search, page, 25);
+  const date = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" });
+  return <AdminRegister title="Customers" href="/admin/customers" search={params.search} placeholder="Search email"
+    columns={["Customer", "Email verification", "Bookings", "Joined"]} count={rows.length} page={page} pageSize={25} empty="No customers match this search.">
+    {rows.map(row => <tr key={row.id}>
+      <td data-label="Customer"><strong>{row.name}</strong><small>{row.email}</small></td>
+      <td data-label="Email verification"><StatusBadge status={row.emailVerified ? "VERIFIED" : "UNVERIFIED"} /></td>
+      <td data-label="Bookings" className="tabular-nums">{row.bookingCount}</td>
+      <td data-label="Joined"><time dateTime={row.createdAt.toISOString()}>{date.format(row.createdAt)}</time></td>
+    </tr>)}
+  </AdminRegister>;
+}
