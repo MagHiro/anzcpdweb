@@ -5,6 +5,7 @@ import { getClientIp } from "@/lib/utils";
 import { consumeRateLimit } from "@/server/security/rate-limit";
 import { verifyTurnstile } from "@/server/security/turnstile";
 import { isSameOrigin } from "@/lib/security/origin";
+import { createVerificationResendProof } from "@/server/auth/verification-resend";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,11 @@ export async function POST(request: Request) {
   const verification = await verifyTurnstile({ token: parsed.data.turnstileToken, remoteIp: ip });
   if (!verification.ok) return NextResponse.json({ error: verification.message }, { status: 400 });
   try {
-    return await auth.api.signInEmail({ body: { email: parsed.data.email, password: parsed.data.password, rememberMe: parsed.data.rememberMe }, headers: request.headers, asResponse: true });
+    const response = await auth.api.signInEmail({ body: { email: parsed.data.email, password: parsed.data.password, rememberMe: parsed.data.rememberMe }, headers: request.headers, asResponse: true });
+    if (response.status === 403 && (await response.clone().json())?.code === "EMAIL_NOT_VERIFIED") {
+      return NextResponse.json({ code: "EMAIL_NOT_VERIFIED", resendProof: createVerificationResendProof(parsed.data.email) }, { status: 403 });
+    }
+    return response;
   } catch {
     return NextResponse.json({ error: "Sign-in failed. Check your email and password, then try again." }, { status: 401 });
   }
