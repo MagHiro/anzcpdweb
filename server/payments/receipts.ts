@@ -26,6 +26,8 @@ export async function issuePaymentReceipt(bookingId: string) {
     paymentId: row.payment.id, bookingId, recipientName: row.booking.fullName,
     recipientEmail: row.booking.email, classTitle: row.booking.classTitleSnapshot,
     amountPaid: row.payment.amountCaptured, currency: row.payment.currency, paidAt: row.booking.paidAt ?? row.booking.confirmedAt!,
+    originalAmount: row.booking.promoCodeSnapshot ? row.booking.amountSnapshot + row.booking.discountMinorUnits : null,
+    promoCode: row.booking.promoCodeSnapshot, discountMinorUnits: row.booking.discountMinorUnits,
   }).onConflictDoNothing({ target: paymentReceipts.paymentId });
   const [receipt] = await db.select().from(paymentReceipts).where(eq(paymentReceipts.paymentId, row.payment.id)).limit(1);
   return receipt ?? null;
@@ -41,6 +43,11 @@ export async function enqueuePaymentReceipt(bookingId: string) {
   await queueEmail({ type: "PAYMENT_RECEIPT", email: receipt.recipientEmail, name: receipt.recipientName,
     receiptNumber: receiptNumber(receipt.id), receiptId: receipt.id, classTitle: receipt.classTitle,
     amount: formatMoney(receipt.amountPaid, receipt.currency),
+    promo: receipt.promoCode && receipt.originalAmount !== null ? {
+      code: receipt.promoCode,
+      originalAmount: formatMoney(receipt.originalAmount, receipt.currency),
+      discount: formatMoney(receipt.discountMinorUnits, receipt.currency),
+    } : undefined,
     noPaymentRequired: receipt.amountPaid === 0,
     url: `${getServerEnv().APP_URL}/booking/receipt/${bookingId}?token=${encodeURIComponent(token)}`,
   }, dedupeKey);

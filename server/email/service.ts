@@ -27,6 +27,7 @@ export type EmailMessage =
       noPaymentRequired?: boolean;
       classTitle: string;
       amount: string;
+      promo?: { code: string; originalAmount: string; discount: string };
       url: string;
     }
   | {

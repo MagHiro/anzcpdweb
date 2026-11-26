@@ -16,6 +16,28 @@ const initialState: BookingActionState = { ok: false };
 
 type AppliedPromo = ({ code: string } | { linkToken: string }) & { quote: PromoQuote };
 
+function BookingPrice({ amount, currency, promo, review = false }: {
+  amount: number;
+  currency: string;
+  promo?: AppliedPromo;
+  review?: boolean;
+}) {
+  const discount = promo?.quote.discountMinorUnits ?? 0;
+  return <dl className="booking-price" aria-live={review ? undefined : "polite"}>
+    {promo && <>
+      <div><dt>Original price</dt><dd>{formatMoney(amount + discount, currency)}</dd></div>
+      <div className="booking-price-discount">
+        <dt>Promo discount{"code" in promo && <small>{promo.code}</small>}</dt>
+        <dd>−{formatMoney(discount, currency)}</dd>
+      </div>
+    </>}
+    <div className="booking-price-total">
+      <dt>Total to pay</dt>
+      <dd>{amount === 0 && !promo && !review ? "Free" : formatMoney(amount, currency)}</dd>
+    </div>
+  </dl>;
+}
+
 export function BookingForm({ classRecord, siteKey, allowManualPromo, linkedPromo, invalidPromoLink }: {
   classRecord: BookingClass;
   siteKey?: string;
@@ -51,8 +73,6 @@ export function BookingForm({ classRecord, siteKey, allowManualPromo, linkedProm
   const amount = promo?.quote.amount ?? classRecord.priceMinorUnits;
   const currency = promo?.quote.currency ?? classRecord.currency;
   const free = amount === 0;
-  const total = formatMoney(amount, currency);
-  const savings = promo && formatMoney(promo.quote.discountMinorUnits, currency);
   const classTime = { startAt: new Date(classRecord.startAt).toISOString(), timezone: classRecord.timezone, allowConversion: classRecord.deliveryFormat === "ONLINE" };
   const busy = pending || state.ok;
   const closeReview = () => { if (!busy) dialog.current?.close(); };
@@ -102,20 +122,25 @@ export function BookingForm({ classRecord, siteKey, allowManualPromo, linkedProm
       {"code" in promo ? <input type="hidden" name="promoCode" value={promo.code} /> : <input type="hidden" name="promoLink" value={promo.linkToken} />}
     </>}
     <aside className="booking-summary" aria-labelledby="booking-class-title">
-      <h2 id="booking-class-title">{classRecord.title}</h2>
-      <div className="booking-summary-meta">
-        <div><ActivityDetailIcon kind="calendar" /><VisitorTime {...classTime} /></div>
-        {cpd && <div><ActivityDetailIcon kind="clock" /><span>{cpd}</span></div>}
+      <div className="booking-summary-header">
+        <p className="booking-kicker">Booking summary</p>
+        <h2 id="booking-class-title">{classRecord.title}</h2>
+        <div className="booking-summary-meta">
+          <div><ActivityDetailIcon kind="calendar" /><VisitorTime {...classTime} /></div>
+          {cpd && <div><ActivityDetailIcon kind="clock" /><span>{cpd}</span></div>}
+        </div>
       </div>
-      {promo && <p className="booking-summary-note">Promo discount: −{savings}</p>}
-      <div className="booking-summary-total"><span>Total</span><strong>{free ? "Free" : total}</strong></div>
-      <p className="booking-summary-note">{free ? "No payment required." : "Pay with Stripe. Wait for checkout to finish before trying again."}</p>
+      <div className="booking-summary-pricing">
+        <BookingPrice amount={amount} currency={currency} promo={promo} />
+        <p className="booking-summary-note">{free ? "No payment required." : "Secure payment through Stripe."}</p>
+      </div>
     </aside>
     <div className="booking-form-main">
     <FormNotice>{reviewError || state.error}</FormNotice>
     {invalidPromoLink && <FormNotice tone="info">This promo link is unavailable. No discount has been applied from the link.</FormNotice>}
     <section className="booking-form-section" aria-labelledby="attendee-heading">
       <h2 id="attendee-heading">Attendee details</h2>
+      <p className="booking-section-intro">We’ll send the booking confirmation and receipt to this email address.</p>
       <div className="booking-attendee-fields">
         <Field label="Full name" required error={state.fieldErrors?.fullName}><TextInput name="fullName" autoComplete="name" required /></Field>
         <Field label={`${getIdentifierLabel(classRecord.country)}${classRecord.professionalIdentifierRequired ? "" : " (optional)"}`} required={classRecord.professionalIdentifierRequired} error={state.fieldErrors?.professionalIdentifier}><TextInput name="professionalIdentifier" inputMode={classRecord.country === "AU" ? "numeric" : "text"} placeholder={classRecord.country === "AU" ? "123456" : "IAA-12345"} required={classRecord.professionalIdentifierRequired} /></Field>
@@ -123,18 +148,17 @@ export function BookingForm({ classRecord, siteKey, allowManualPromo, linkedProm
         <Field label="Confirm email address" required error={state.fieldErrors?.emailConfirmation}><TextInput name="emailConfirmation" type="email" autoComplete="email" required /></Field>
       </div>
     </section>
-    {(promo || allowManualPromo) && <section className="booking-form-section" aria-labelledby="promo-heading">
-      <h2 id="promo-heading">Promo discount</h2>
-      {promo ? <div className="flex flex-wrap items-center gap-3">
-        <p role="status">{"code" in promo ? `${promo.code} applied` : "Promo applied"} · {savings} off</p>
+    {(promo || allowManualPromo) && <section className="booking-promo" aria-label="Promo discount">
+      {promo ? <div className="booking-promo-applied">
+        <p role="status"><span aria-hidden="true">✓</span> {"code" in promo ? `${promo.code} applied` : "Promo applied"}</p>
         <Button type="button" variant="quiet" size="sm" disabled={busy} onClick={() => { setPromo(undefined); setPromoDraft(""); }}>Remove discount</Button>
-      </div> : <div className="flex flex-wrap items-end gap-3">
+      </div> : <div className="booking-promo-entry">
         <Field label="Promo code" className="min-w-0 flex-1" error={promoError}>
           <TextInput value={promoDraft} disabled={busy || promoPending} maxLength={32} autoComplete="off"
             onChange={event => { setPromoDraft(event.target.value); setPromoError(""); }}
             onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void applyPromo(); } }} />
         </Field>
-        <Button type="button" variant="secondary" disabled={busy || promoPending || !promoDraft.trim()} onClick={applyPromo}>
+        <Button type="button" variant="secondary" size="md" disabled={busy || promoPending || !promoDraft.trim()} onClick={applyPromo}>
           {promoPending ? "Checking…" : "Apply"}
         </Button>
       </div>}
@@ -147,8 +171,13 @@ export function BookingForm({ classRecord, siteKey, allowManualPromo, linkedProm
       </div>
       <label className="booking-account-option"><input type="checkbox" name="createAccountRequested" /><span>Create an account to manage my bookings.<small>We’ll email a setup link after {free ? "confirmation" : "payment"}.</small></span></label>
     </section>
-    <Turnstile key={turnstileAttempt} siteKey={siteKey} onToken={setTurnstileToken} />
-    <button ref={reviewButton} type="submit" aria-haspopup="dialog" disabled={busy || promoPending} className="booking-submit focus-ring">Review booking <ArrowRight /></button>
+    <div className="booking-form-footer">
+      <Turnstile key={turnstileAttempt} siteKey={siteKey} onToken={setTurnstileToken} compactOnNarrowScreens />
+      <div className="booking-form-next">
+        <button ref={reviewButton} type="submit" aria-haspopup="dialog" disabled={busy || promoPending} className="booking-submit focus-ring">Review booking <ArrowRight /></button>
+        <p>Check your details before {free ? "confirming" : "payment"}.</p>
+      </div>
+    </div>
     <dialog ref={dialog} className="booking-review-dialog" aria-labelledby={reviewTitleId} onCancel={event => { event.preventDefault(); closeReview(); }} onClose={() => reviewButton.current?.focus()}>
       <div className="booking-review-heading"><h2 id={reviewTitleId}>Review your booking</h2><button type="button" className="booking-review-close focus-ring" aria-label="Close review" disabled={busy} onClick={closeReview}><CloseIcon /></button></div>
       {review && <>
@@ -160,10 +189,7 @@ export function BookingForm({ classRecord, siteKey, allowManualPromo, linkedProm
           <div><dt>Attendee</dt><dd>{review.name}</dd></div>
           <div><dt>Confirmation email</dt><dd>{review.email}</dd></div>
         </dl>
-        <dl className="booking-review-total">
-          {promo && <div><dt>Promo discount</dt><dd>−{savings}</dd></div>}
-          <div><dt>Total to pay</dt><dd>{total}</dd></div>
-        </dl>
+        <BookingPrice amount={amount} currency={currency} promo={promo} review />
       </>}
       <FormNotice>{attempted && !busy ? state.error : undefined}</FormNotice>
       <div className="booking-review-actions">

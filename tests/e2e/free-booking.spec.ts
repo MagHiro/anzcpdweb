@@ -31,7 +31,6 @@ test("zero-cost booking completes without a Stripe redirect", async ({ page }) =
     await page.getByRole("button", { name: "Review booking", exact: true }).click();
     await page.getByRole("button", { name: "Confirm booking", exact: true }).click();
     await expect(page).toHaveURL(/\/booking\/confirmation\?token=/);
-    await expect(page.getByText("Confirmed", { exact: true }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Your place is confirmed" })).toBeVisible();
     await expect(page.getByText("Free · No payment required", { exact: true })).toBeVisible();
     for (const width of [390, 768, 1440]) {

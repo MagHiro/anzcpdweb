@@ -7,6 +7,7 @@ export type ReceiptSnapshot = typeof paymentReceipts.$inferSelect;
 export function ReceiptDocument({ receipt, refunded = 0, attachment = false }: { receipt: ReceiptSnapshot; refunded?: number; attachment?: boolean }) {
   const money = (amount: number) => formatMoney(amount, receipt.currency);
   const free = receipt.amountPaid === 0;
+  const hasPromo = Boolean(receipt.promoCode && receipt.originalAmount !== null);
   const date = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(receipt.paidAt);
   return <article aria-labelledby="receipt-title" className="receipt-document">
     <style>{`
@@ -33,6 +34,9 @@ export function ReceiptDocument({ receipt, refunded = 0, attachment = false }: {
       .receipt-document .receipt-summary div { display: flex; justify-content: space-between; gap: 20px; margin-top: 16px; }
       .receipt-document .receipt-summary dt { color: inherit; }
       .receipt-document .receipt-summary dd { margin: 0; }
+      .receipt-document .receipt-summary > div > :last-child { text-align: right; }
+      .receipt-document .receipt-summary .receipt-summary-total { border-top: 1px solid #e0e5dd; padding-top: 12px; font-weight: 600; }
+      .receipt-document .receipt-promo-code { display: block; font-size: 12px; color: #5e6b63; }
       .receipt-document footer { border-top: 1px solid #e0e5dd; margin-top: 56px; padding-top: 24px; font-size: 12px; line-height: 2; color: #5e6b63; }
       .receipt-document footer p + p { margin-top: 12px; }
       @media screen and (max-width: 600px) { .receipt-document { padding: 32px 24px; } .receipt-document header { flex-direction: column; } .receipt-document .receipt-heading { text-align: left; } .receipt-document .receipt-contact { grid-template-columns: 1fr; } .receipt-document .receipt-reference { text-align: left; } }
@@ -41,8 +45,15 @@ export function ReceiptDocument({ receipt, refunded = 0, attachment = false }: {
     <header><p className="receipt-brand">ANZ Migration<br />Academy</p><div className="receipt-heading"><h1 id="receipt-title">{free ? "Booking receipt" : "Payment receipt"}</h1><p className="receipt-muted">{free ? "Confirmed" : "Paid"} on {date} (UTC)</p></div></header>
     <div className="receipt-amount"><p className="receipt-muted">{free ? "Booking total" : "Amount paid"} · {receipt.currency}</p><p className="receipt-total">{money(receipt.amountPaid)}</p><p>{free ? "No payment required" : refunded > 0 ? "Refund details below" : "Paid in full"}</p></div>
     <dl className="receipt-contact"><div><dt>Attendee</dt><dd>{receipt.recipientName}</dd><dd className="receipt-muted">{receipt.recipientEmail}</dd></div><div className="receipt-reference"><dt>Booking reference</dt><dd>{makePublicBookingReference(receipt.bookingId)}</dd></div></dl>
-    <table><thead><tr><th scope="col">Activity</th><th scope="col">Amount</th></tr></thead><tbody><tr><td>{receipt.classTitle}<p className="receipt-muted">1 place</p></td><td>{money(receipt.amountPaid)}</td></tr></tbody></table>
-    <dl className="receipt-summary"><div><dt>{free ? "Booking total" : "Total paid"}</dt><dd>{money(receipt.amountPaid)}</dd></div>{refunded > 0 && <><div><dt>Total refunded</dt><dd>−{money(refunded)}</dd></div><div><dt>Amount after refunds</dt><dd>{money(receipt.amountPaid - refunded)}</dd></div></>}</dl>
+    <table>
+      <thead><tr><th scope="col">Activity</th><th scope="col">{hasPromo ? "Original price" : "Amount"}</th></tr></thead>
+      <tbody><tr><td>{receipt.classTitle}<p className="receipt-muted">1 place</p></td><td>{money(receipt.originalAmount ?? receipt.amountPaid)}</td></tr></tbody>
+    </table>
+    <dl className="receipt-summary">
+      {hasPromo && <div><dt>Promo discount<span className="receipt-promo-code">Code: {receipt.promoCode}</span></dt><dd>−{money(receipt.discountMinorUnits)}</dd></div>}
+      <div className={hasPromo ? "receipt-summary-total" : undefined}><dt>{free ? "Booking total" : "Total paid"}</dt><dd>{money(receipt.amountPaid)}</dd></div>
+      {refunded > 0 && <><div><dt>Total refunded</dt><dd>−{money(refunded)}</dd></div><div><dt>Amount after refunds</dt><dd>{money(receipt.amountPaid - refunded)}</dd></div></>}
+    </dl>
     <footer><p>Receipt number: R-{receipt.id.replaceAll("-", "").toUpperCase()}</p><p>{free ? "No payment was collected. This is not a tax invoice." : "This is a payment receipt, not a tax invoice."} This receipt does not confirm attendance.</p>{attachment && !free && <p>The amount shown is the original payment. See the online receipt for any refunds.</p>}<p>anzmigrationacademy.com</p></footer>
   </article>;
 }

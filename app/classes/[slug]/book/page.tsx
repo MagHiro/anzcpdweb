@@ -38,8 +38,13 @@ export default async function BookClassPage({ params, searchParams }: {
     currency: record.currency,
     professionalIdentifierRequired: record.professionalIdentifierRequired,
   };
-  return <Section className="booking-page"><Container>
-    <header className="booking-heading">{back}<h1>Complete your booking</h1></header>
+  return <Section className="booking-page"><Container className="booking-container">
+    <header className="booking-heading">
+      {back}
+      <p className="booking-kicker">Class registration</p>
+      <h1>Complete your booking</h1>
+      <p className="booking-intro">Enter your details, check the total, and review your booking before you confirm.</p>
+    </header>
     <BookingForm key={`${slug}:${token.success ? token.data : ""}`} classRecord={bookingClass}
       siteKey={getServerEnv().NEXT_PUBLIC_TURNSTILE_SITE_KEY}
       allowManualPromo={record.promoMode === "CODE_AND_LINK" && record.priceMinorUnits > 0}

@@ -10,6 +10,7 @@ const receipt = {
   recipientEmail: "zoe@example.com",
   classTitle: "Practical migration law — professional development",
   amountPaid: 14900, currency: "NZD",
+  originalAmount: 19900, promoCode: "WORKSHOP50", discountMinorUnits: 5000,
   paidAt: new Date("2026-10-30T00:00:00Z"), issuedAt: new Date("2026-10-30T00:00:01Z"),
 };
 

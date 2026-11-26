@@ -2,34 +2,72 @@
 @import "./forms.css";
 
 /* Booking and confirmation */
-.booking-page { --booking-space: clamp(24px, 4vw, 56px); padding-block: clamp(16px, 3vw, 36px) clamp(48px, 7vw, 96px); }
+.booking-page {
+  --booking-panel-padding: clamp(18px, 3vw, 36px);
+  padding-block: clamp(16px, 3vw, 36px) clamp(48px, 7vw, 96px);
+  background: radial-gradient(ellipse at top right, #e7f0e9, transparent 60%) var(--color-canvas);
+}
+.booking-page .booking-container { max-width: 1240px; }
 .confirmation-page { padding-block: 48px 80px; }
-.booking-heading { padding-bottom: clamp(24px, 4vw, 48px); border-bottom: 1px solid var(--line); }
-.academy-site .booking-heading h1 { margin-top: 12px; color: var(--forest); font-weight: 400; font-size: clamp(32px, 4.2vw, 56px); line-height: 1.1; letter-spacing: -.035em; }
+.booking-heading { padding-bottom: clamp(24px, 3.5vw, 44px); }
+.academy-site .booking-heading h1 { margin-top: 8px; color: var(--forest); font-weight: 400; font-size: clamp(32px, 4.4vw, 58px); line-height: 1.1; letter-spacing: -.045em; text-wrap: balance; }
 .booking-heading p { margin-top: 12px; color: var(--muted); }
+.booking-kicker { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.booking-heading .booking-kicker { margin-top: clamp(14px, 2vw, 24px); color: var(--fern); }
+.booking-heading .booking-intro { max-width: 48ch; line-height: 1.6; }
 .booking-form label, .booking-form .form-field > label { font-weight: 400; }
 .booking-form strong, .booking-form .font-bold, .booking-form .font-semibold { font-weight: 500; }
-.booking-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 34%); align-items: start; }
-.booking-form-main { grid-column: 1; grid-row: 1; min-width: 0; display: grid; gap: 24px; padding: var(--booking-space) var(--booking-space) 0 0; }
-.booking-summary { grid-column: 2; grid-row: 1; min-width: 0; padding: var(--booking-space) 0 var(--booking-space) var(--booking-space); border-inline-start: 1px solid var(--line); overflow-wrap: anywhere; }
-.academy-site .booking-summary h2 { color: var(--forest); font-size: clamp(20px, 2vw, 24px); line-height: 1.3; font-weight: 500; text-wrap: pretty; }
-.booking-summary-meta { display: grid; gap: 10px; margin-top: 16px; font-size: 14px; line-height: 1.5; }
+.booking-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 36%); gap: clamp(16px, 3vw, 36px); align-items: start; }
+.booking-form-main, .booking-summary { min-width: 0; border: 1px solid var(--line); border-radius: 24px; background: white; }
+.booking-form-main { grid-column: 1; grid-row: 1; display: grid; gap: 24px; padding: var(--booking-panel-padding); }
+.booking-summary { grid-column: 2; grid-row: 1; overflow: hidden; overflow-wrap: anywhere; box-shadow: 0 24px 42px -34px rgb(20 56 44 / 45%); }
+.booking-summary-header {
+  --muted: #c6ddd2;
+  padding: var(--booking-panel-padding);
+  background: radial-gradient(ellipse at top right, #2d6450, transparent 75%) #14382c;
+  color: white;
+}
+.booking-summary-header .booking-kicker { color: #b9dac9; }
+.academy-site .booking-summary h2 { margin-top: 12px; color: white; font-size: clamp(20px, 2.1vw, 28px); line-height: 1.25; font-weight: 500; text-wrap: pretty; }
+.booking-summary-meta { display: grid; gap: 10px; margin-top: 18px; font-size: 14px; line-height: 1.5; }
 .booking-summary-meta > div { display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: start; gap: 8px; }
-.booking-summary-total { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 14px; }
-.booking-summary-total strong { color: var(--forest); font-size: 22px; line-height: 1.2; font-weight: 500; }
+.booking-summary-meta svg { color: #b9dac9; }
+.booking-summary-pricing { padding: var(--booking-panel-padding); }
+.booking-price { display: grid; gap: 8px; font-size: 14px; }
+.booking-price > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.booking-price dt { min-width: 0; overflow-wrap: anywhere; }
+.booking-price dd { margin-inline-start: auto; font-variant-numeric: tabular-nums; text-align: end; }
+.booking-price-discount { color: var(--fern); font-weight: 500; }
+.booking-price-discount small { display: block; margin-top: 2px; font-size: 12px; }
+.booking-price-total { color: var(--forest); font-weight: 600; }
+.booking-price > div + .booking-price-total { margin-top: 6px; padding-top: 14px; border-top: 1px dashed var(--color-border-strong); }
+.booking-price-total dd { font-size: clamp(24px, 3vw, 32px); font-weight: 500; line-height: 1.15; letter-spacing: -.035em; }
 .booking-summary-note { margin-top: 10px; font-size: 13px; line-height: 1.5; color: var(--muted); }
 .booking-form-section { min-width: 0; }
-.booking-form-section ~ .booking-form-section { padding-top: 24px; border-top: 1px solid var(--line); }
-.academy-site .booking-form-section h2 { margin: 0 0 20px; color: var(--forest); font-size: 22px; line-height: 1.25; font-weight: 500; }
+.academy-site .booking-form-section h2 { margin: 0 0 12px; color: var(--forest); font-size: clamp(20px, 2vw, 24px); line-height: 1.25; font-weight: 500; letter-spacing: -.025em; }
+.booking-section-intro { margin-bottom: 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
 .booking-attendee-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; }
-.booking-attendee-fields .form-control { min-height: 48px; border-radius: 12px; }
+.booking-attendee-fields .form-field { align-self: end; }
+.booking-form .form-control { min-height: 48px; border-radius: 12px; }
+.booking-promo { padding: 12px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--mist); }
+.booking-promo:has(.booking-promo-applied) { border-color: #bfdaca; background: #edf7f0; }
+.booking-promo-entry, .booking-promo-applied { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.booking-promo-entry { align-items: start; }
+.booking-promo-entry button { align-self: start; margin-top: 28px; }
+.booking-promo-applied { justify-content: space-between; color: var(--forest); font-size: 14px; overflow-wrap: anywhere; }
+.booking-promo-applied p { min-width: 0; font-weight: 500; }
+.booking-promo-applied p span { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-inline-end: 4px; border-radius: 50%; background: #d6ebdc; }
 .booking-policy-list { display: grid; gap: 2px; }
+.booking-agreements { padding-top: 22px; border-top: 1px solid var(--line); }
 .booking-agreements label { display: flex; min-height: 44px; align-items: flex-start; gap: 12px; padding: 10px 0; border: 0; background: transparent; color: var(--ink); font-size: 14px; line-height: 1.5; }
 .booking-agreements label:has(input:checked) { background: transparent; }
 .booking-agreements input { flex: none; width: 16px; height: 16px; margin-top: 2px; accent-color: var(--forest); }
 .booking-agreements a { text-decoration: underline; text-underline-offset: 3px; }
 .booking-agreements .booking-account-option { margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
 .booking-account-option small { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
+.booking-form-footer { display: grid; gap: 16px; }
+.booking-form-next { display: grid; gap: 8px; }
+.booking-form-next p { color: var(--muted); font-size: 13px; }
 .booking-submit { display: flex; justify-self: start; min-height: 48px; max-width: 100%; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 18px; border-radius: 12px; background: var(--forest); color: white; font-size: 14px; font-weight: 500; text-align: left; }
 .booking-submit svg { flex: none; }
 .booking-submit:hover:not(:disabled) { background: var(--color-brand-hover); }
@@ -47,9 +85,7 @@ body:has(.booking-review-dialog[open]) { overflow: hidden; }
 .booking-review-details > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; padding-block: 10px; border-top: 1px solid var(--line); }
 .booking-review-details dt { color: var(--muted); }
 .booking-review-details dd { overflow-wrap: anywhere; text-align: right; font-weight: 500; }
-.booking-review-total > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; padding-block: 14px; border-block: 1px solid var(--line); color: var(--forest); }
-.booking-review-total dt { font-size: 14px; font-weight: 500; }
-.booking-review-total dd { font-size: clamp(22px, 4vw, 30px); font-weight: 500; }
+.booking-review-dialog .booking-price { padding: 16px; border-radius: 16px; background: var(--mist); }
 .booking-review-actions { flex-wrap: wrap; margin-top: 20px; }
 .booking-review-edit { min-height: 44px; padding: 8px 12px; border: 1px solid var(--color-border-strong); border-radius: 12px; background: transparent; color: var(--forest); font-size: 14px; font-weight: 500; }
 .booking-review-edit:hover:not(:disabled) { background: var(--mist); }
@@ -89,12 +125,15 @@ body:has(.booking-review-dialog[open]) { overflow: hidden; }
 }
 @media (max-width: 800px) {
   .booking-form { grid-template-columns: minmax(0, 1fr); }
-  .booking-summary { grid-column: 1; padding-inline-start: 0; border-inline-start: 0; border-bottom: 1px solid var(--line); }
-  .booking-form-main { grid-row: 2; padding-inline-end: 0; }
+  .booking-summary { grid-column: 1; }
+  .booking-form-main { grid-row: 2; }
   .confirmation-grid { grid-template-columns: minmax(0, 1fr); }
   .confirmation-page { padding-block: 28px 48px; }
   .confirmation-activity, .confirmation-record { padding-inline: 0; }
   .confirmation-record { border-inline-start: 0; border-top: 1px solid var(--line); }
+}
+@media (min-width: 801px) and (min-height: 740px) {
+  .booking-summary { position: sticky; top: 112px; }
 }
 
 /* Shared editorial and operational tokens. Forest green remains the brand anchor. */
@@ -636,8 +675,6 @@ dialog { color: var(--ink); }
 dialog::backdrop { background: #152a2260; }
 
 /* Route-specific composition, sharing the same accessible controls and tokens. */
-.academy-site[data-page$="/book"] form > div[class*="rounded"] { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; padding-inline: 0; box-shadow: none; }
-.academy-site[data-page$="/book"] aside { border: 0; border-left: 1px solid var(--line); border-radius: 0; background: transparent; }
 .academy-site[data-page^="/booking/"] article,
 .academy-site[data-page^="/booking/"] aside { box-shadow: none; }
 .academy-site[data-page="/privacy"] header,
@@ -923,7 +960,6 @@ dialog::backdrop { background: #152a2260; }
   .workspace form[method="get"] > input:not([type="hidden"]), .workspace form[method="get"] > select { flex-basis: 100%; width: 100%; }
   .booking-card { padding: 20px; }
   .workspace .booking-card-title { font-size: 20px; line-height: 28px; }
-  .academy-site[data-page$="/book"] aside { border-left: 0; border-top: 1px solid var(--line); }
   .workspace-admin form > section { padding: 24px; }
   .settings-form .form-field { display: flex; }
   .settings-form > button { margin-left: 0; }
