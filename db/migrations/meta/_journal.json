@@ -71,6 +71,13 @@
       "when": 1793943413700,
       "tag": "0009_unknown_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795668729743,
+      "tag": "0010_class_promo_codes",
+      "breakpoints": true
     }
   ]
 }

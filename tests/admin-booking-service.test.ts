@@ -20,9 +20,9 @@ function query() {
 }
 beforeEach(() => {
   vi.resetAllMocks(); inserted.length = 0;
-  // Account lookup, idempotency lookup, class lock, retry lookup, class, duplicate,
+  // Account lookup, idempotency lookup, locked class, retry lookup, duplicate,
   // capacity refresh, confirmation dedupe, confirmation class details.
-  results = [[{ id: "user" }], [], [], [], [activity], [], [activity], [], [{ startAt: new Date(), meetingLink: null }]];
+  results = [[{ id: "user" }], [], [activity], [], [], [activity], [], [{ startAt: new Date(), meetingLink: null }]];
   mocks.select.mockImplementation(query);
   mocks.insert.mockImplementation(table => ({ values: (values: Record<string, unknown>) => {
     inserted.push({ table, values });
@@ -40,7 +40,7 @@ it("records verified payments, account ownership, and admin evidence without con
   expect(mocks.queue).toHaveBeenCalled(); expect(mocks.stripe).not.toHaveBeenCalled();
 });
 it("rejects duplicate active participants before creating records", async () => {
-  results[5] = [{ id: "duplicate" }];
+  results[4] = [{ id: "duplicate" }];
   await expect(createBookingCheckout(input, { actorId: "admin", mode: "VERIFIED", reference: "Transfer" })).rejects.toThrow("active booking");
   expect(inserted).toHaveLength(0);
 });
@@ -50,8 +50,8 @@ it("confirms verified payments without a payment reference while retaining the a
   expect(inserted.find(item => item.table === auditLogs)?.values).toMatchObject({ actorUserId: "admin", action: "ADMIN_PAYMENT_VERIFIED" });
 });
 it("enforces capacity even for verified payments", async () => {
-  results[4] = [{ ...activity, unlimitedCapacity: false, seatCapacity: 1 }];
-  results[6] = [{ count: 1 }];
+  results[2] = [{ ...activity, unlimitedCapacity: false, seatCapacity: 1 }];
+  results[5] = [{ count: 1 }];
   await expect(createBookingCheckout(input, { actorId: "admin", mode: "VERIFIED", reference: "Transfer" })).rejects.toThrow("sold out");
   expect(inserted).toHaveLength(0);
 });

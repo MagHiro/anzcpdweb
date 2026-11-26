@@ -18,6 +18,8 @@ import {
 export const countryCodeEnum = pgEnum("country_code", ["AU", "NZ"]);
 export const userRoleEnum = pgEnum("user_role", ["CUSTOMER", "ADMIN"]);
 export const categoryVisibilityEnum = pgEnum("category_visibility", ["VISIBLE", "HIDDEN"]);
+export const promoModeEnum = pgEnum("promo_mode", ["DISABLED", "LINK_ONLY", "CODE_AND_LINK"]);
+export const promoDiscountTypeEnum = pgEnum("promo_discount_type", ["PERCENT", "FIXED"]);
 export const classStatusEnum = pgEnum("class_status", [
   "DRAFT",
   "SCHEDULED",
@@ -229,6 +231,7 @@ export const classes = pgTable(
     meetingLink: text("meeting_link"),
     priceMinorUnits: integer("price_minor_units").notNull(),
     currency: text("currency").notNull(),
+    promoMode: promoModeEnum("promo_mode").notNull().default("DISABLED"),
     seatCapacity: integer("seat_capacity"),
     unlimitedCapacity: boolean("unlimited_capacity").notNull().default(false),
     cpdUnitType: cpdUnitTypeEnum("cpd_unit_type").notNull().default("NONE"),
@@ -253,6 +256,24 @@ export const classes = pgTable(
     check("classes_booking_window_valid", sql`${table.bookingClosesAt} >= ${table.bookingOpensAt}`),
   ],
 );
+
+export const classPromoCodes = pgTable("class_promo_codes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  classId: uuid("class_id").notNull().references(() => classes.id, { onDelete: "cascade" }),
+  code: text("code").notNull(),
+  linkToken: uuid("link_token").notNull().defaultRandom(),
+  discountType: promoDiscountTypeEnum("discount_type").notNull(),
+  discountValue: integer("discount_value").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  validFrom: timestamp("valid_from", { withTimezone: true }).notNull(),
+  validUntil: timestamp("valid_until", { withTimezone: true }).notNull(),
+  ...createdUpdated,
+}, table => [
+  uniqueIndex("class_promo_codes_class_code_unique").on(table.classId, table.code),
+  uniqueIndex("class_promo_codes_link_token_unique").on(table.linkToken),
+  check("class_promo_codes_validity", sql`${table.validUntil} > ${table.validFrom}`),
+  check("class_promo_codes_discount", sql`${table.discountValue} > 0 AND (${table.discountType} <> 'PERCENT' OR ${table.discountValue} <= 100)`),
+]);
 
 export const classMedia = pgTable(
   "class_media",
@@ -308,6 +329,9 @@ export const bookings = pgTable(
     attendance: text("attendance").notNull().default("NOT_RECORDED"),
     attendanceRecordedAt: timestamp("attendance_recorded_at", { withTimezone: true }),
     amountSnapshot: integer("amount_snapshot").notNull(),
+    promoCodeId: uuid("promo_code_id").references(() => classPromoCodes.id, { onDelete: "restrict" }),
+    promoCodeSnapshot: text("promo_code_snapshot"),
+    discountMinorUnits: integer("discount_minor_units").notNull().default(0),
     currencySnapshot: text("currency_snapshot").notNull(),
     classTitleSnapshot: text("class_title_snapshot").notNull(),
     cpdUnitTypeSnapshot: cpdUnitTypeEnum("cpd_unit_type_snapshot"),
@@ -333,6 +357,7 @@ export const bookings = pgTable(
     index("bookings_user_created_idx").on(table.userId, table.createdAt),
     index("bookings_email_idx").on(table.email),
     check("bookings_amount_non_negative", sql`${table.amountSnapshot} >= 0`),
+    check("bookings_discount_valid", sql`(${table.discountMinorUnits} = 0 AND ${table.promoCodeId} IS NULL AND ${table.promoCodeSnapshot} IS NULL) OR (${table.discountMinorUnits} > 0 AND ${table.promoCodeId} IS NOT NULL AND ${table.promoCodeSnapshot} IS NOT NULL)`),
   ],
 );
 

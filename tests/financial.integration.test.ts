@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 import { getDb } from "@/lib/db";
-import { accountClaimTokens, bookings, categories, classes, countries, emailOutbox, paymentReceipts, payments, refunds, user } from "@/db/schema";
+import { accountClaimTokens, bookings, categories, classes, classPromoCodes, countries, emailOutbox, paymentReceipts, payments, refunds, user } from "@/db/schema";
 import { issuePaymentReceipt } from "@/server/payments/receipts";
 import { receiptEmailAttachments, type EmailMessage } from "@/server/email/service";
 import { completeAccountLink, createAccountToken } from "@/server/auth/tokens";
@@ -12,6 +12,8 @@ import { cancelClass, deleteSourceReference, publishClass, replaceClassSources, 
 import { syncPaymentRefundTotals, syncRefundFromStripe } from "@/server/payments/refunds";
 import { getPublishedClassBySlug, getPublishedClasses } from "@/server/catalogue/queries";
 import { makePublicBookingReference } from "@/lib/utils";
+import { getBookingPromo } from "@/server/bookings/promos";
+import * as stripe from "@/server/payments/stripe";
 
 describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests", () => {
   let db: ReturnType<typeof getDb>;
@@ -110,6 +112,47 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     const legacy = await receiptEmailAttachments({ ...message, receiptId: undefined });
     expect(legacy).toHaveLength(1);
     await expect(receiptEmailAttachments({ ...message, email: "other@example.com" })).rejects.toThrow("does not match");
+  });
+
+  it("only honours a hidden promo by link and sends the verified discount and code to Stripe", async () => {
+    const { record } = await fixture("CANCELLED");
+    const [activity] = await db.update(classes).set({ promoMode: "LINK_ONLY" }).where(eq(classes.id, record.id)).returning();
+    const now = Date.now();
+    const [promo] = await db.insert(classPromoCodes).values({
+      classId: activity.id, code: "PRIVATE25", discountType: "PERCENT", discountValue: 25,
+      validFrom: new Date(now - 60_000), validUntil: new Date(now + 60_000),
+    }).returning();
+    const input = {
+      classSlug: activity.slug, fullName: "Promo attendee", email: `promo-${randomUUID()}@example.com`,
+      createAccountRequested: false, termsAcceptedAt: new Date(), refundPolicyAcceptedAt: new Date(), idempotencyKey: randomUUID(),
+      expectedPrice: { amount: 7500, currency: "AUD", promoCodeId: promo.id },
+    };
+    tokenEmails.push(input.email);
+    const link = { linkToken: promo.linkToken };
+    await expect(getBookingPromo(db, activity, link, promo.validUntil)).resolves.toBeNull();
+    await expect(createBookingCheckout({ ...input, promo: { code: promo.code } })).rejects.toThrow(/promo is unavailable/);
+    await db.update(classes).set({ promoMode: "DISABLED" }).where(eq(classes.id, activity.id));
+    await expect(createBookingCheckout({ ...input, promo: link })).rejects.toThrow(/promo is unavailable/);
+    await db.update(classes).set({ promoMode: "LINK_ONLY" }).where(eq(classes.id, activity.id));
+    await expect(createBookingCheckout({ ...input, promo: link, expectedPrice: { ...input.expectedPrice, amount: 1 } })).rejects.toThrow(/price or promo has changed/);
+
+    const createSession = vi.fn().mockResolvedValue({ id: `cs_${randomUUID()}`, url: "https://checkout.stripe.com/test" });
+    const stripeMock = vi.spyOn(stripe, "getStripe").mockReturnValue({ checkout: { sessions: { create: createSession } } } as unknown as Stripe);
+    try {
+      const result = await createBookingCheckout({ ...input, promo: link });
+      bookingIds.push(result.booking.id);
+      expect(result.booking).toMatchObject({ amountSnapshot: 7500, promoCodeId: promo.id, promoCodeSnapshot: "PRIVATE25", discountMinorUnits: 2500 });
+      const metadata = { promoCode: "PRIVATE25", promoCodeId: promo.id, discountMinorUnits: "2500", originalAmountMinorUnits: "10000" };
+      expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
+        line_items: [expect.objectContaining({ price_data: expect.objectContaining({ currency: "aud", unit_amount: 7500 }) })],
+        metadata: expect.objectContaining(metadata),
+        payment_intent_data: { metadata: expect.objectContaining(metadata) },
+      }), expect.anything());
+      const [payment] = await db.select().from(payments).where(eq(payments.bookingId, result.booking.id));
+      expect(payment.amountTotal).toBe(7500);
+    } finally {
+      stripeMock.mockRestore();
+    }
   });
 
   it("records late capture without overbooking a reused seat", async () => {

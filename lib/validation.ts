@@ -6,6 +6,7 @@ export const uuidSchema = z.string().uuid();
 export const emailSchema = z.string().trim().toLowerCase().email("Enter a valid email address.");
 export const nameSchema = z.string().trim().min(2, "Enter your full name.").max(120, "Name is too long.");
 export const slugSchema = z.string().trim().min(2).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers and hyphens.");
+export const promoCodeSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9][A-Z0-9_-]{2,31}$/, "Use 3–32 letters, numbers, hyphens or underscores, starting with a letter or number.");
 
 export function professionalIdentifierSchema(country: CountryCode, required: boolean) {
   const base = z.string().trim().max(64, "Identifier is too long.");
@@ -32,6 +33,11 @@ export const bookingFormSchema = z
     refundPolicyAccepted: z.literal("on", "Acknowledge the refund policy to continue."),
     turnstileToken: z.string().trim().optional().or(z.literal("")),
     idempotencyKey: z.string().uuid(),
+    promoCode: promoCodeSchema.optional(),
+    promoLink: uuidSchema.optional(),
+    promoCodeId: uuidSchema.optional(),
+    expectedAmount: z.string().regex(/^\d{1,8}$/).transform(Number).optional(),
+    expectedCurrency: z.enum(["AUD", "NZD"]).optional(),
   })
   .superRefine((value, context) => {
     if (value.email !== value.emailConfirmation) {

@@ -11,6 +11,7 @@ import { getStripe } from "@/server/payments/stripe";
 import { stripeIntegrationMetadata } from "@/server/payments/integration";
 import { assertBookingTransition } from "@/server/bookings/transitions";
 import { enqueuePaymentReceipt } from "@/server/payments/receipts";
+import { BookingQuoteError, getBookingPromo, unavailablePromo, type PromoInput } from "@/server/bookings/promos";
 
 const reservationStatuses = ["PENDING_PAYMENT", "PAYMENT_PROCESSING"] as const;
 const seatHoldingStatuses = ["CONFIRMED", "PARTIALLY_REFUNDED"] as const;
@@ -33,7 +34,30 @@ export type CreateCheckoutInput = {
   termsAcceptedAt: Date;
   refundPolicyAcceptedAt: Date;
   idempotencyKey: string;
+  promo?: PromoInput;
+  expectedPrice?: { amount: number; currency: string; promoCodeId?: string };
 };
+
+function assertExpectedPrice(input: CreateCheckoutInput, price: { amountSnapshot: number; currencySnapshot: string; promoCodeId: string | null }) {
+  const expected = input.expectedPrice;
+  if (expected && (expected.amount !== price.amountSnapshot || expected.currency !== price.currencySnapshot || (expected.promoCodeId ?? null) !== price.promoCodeId)) {
+    throw new BookingQuoteError("The booking price or promo has changed. Refresh the booking page and review the latest total before continuing.");
+  }
+}
+
+async function getCheckoutPrice(tx: Transaction, activity: typeof classes.$inferSelect, input: CreateCheckoutInput, now: Date) {
+  const promo = input.promo ? await getBookingPromo(tx, activity, input.promo, now) : null;
+  if (input.promo && !promo) throw new BookingQuoteError(unavailablePromo);
+  const price = {
+    amountSnapshot: promo?.quote.amount ?? activity.priceMinorUnits,
+    currencySnapshot: activity.currency,
+    promoCodeId: promo?.quote.promoCodeId ?? null,
+    promoCodeSnapshot: promo?.code ?? null,
+    discountMinorUnits: promo?.quote.discountMinorUnits ?? 0,
+  };
+  assertExpectedPrice(input, price);
+  return price;
+}
 
 async function activeSeatCount(tx: QueryExecutor, classId: string): Promise<number> {
   const [row] = await tx
@@ -65,6 +89,7 @@ export async function createBookingCheckout(input: CreateCheckoutInput, admin?: 
   const createAccountRequested = !input.userId && input.createAccountRequested;
   const existing = await db.select().from(bookings).where(eq(bookings.idempotencyKey, input.idempotencyKey)).limit(1);
   if (existing[0] && (existing[0].email !== input.email.toLowerCase() || existing[0].userId !== (input.userId ?? null))) throw new Error("This booking request belongs to a different attendee or account.");
+  if (existing[0]) assertExpectedPrice(input, existing[0]);
   if (existing[0]?.status === "CONFIRMED" && (existing[0].amountSnapshot === 0 || admin?.mode === "VERIFIED")) {
     const [activity] = await db.select({ slug: classes.slug }).from(classes).where(eq(classes.id, existing[0].classId)).limit(1);
     if (activity?.slug !== input.classSlug) throw new Error("This booking request belongs to a different class.");
@@ -81,13 +106,14 @@ export async function createBookingCheckout(input: CreateCheckoutInput, admin?: 
   }
 
   const created = await db.transaction(async (tx) => {
-    await tx.select({ id: classes.id }).from(classes).where(eq(classes.slug, input.classSlug)).for("update");
+    const [classRecord] = await tx.select().from(classes).where(eq(classes.slug, input.classSlug)).for("update").limit(1);
     const [alreadyCreated] = await tx.select().from(bookings).where(eq(bookings.idempotencyKey, input.idempotencyKey)).for("update").limit(1);
     if (alreadyCreated) {
       if (alreadyCreated.email !== input.email.toLowerCase() || alreadyCreated.userId !== (input.userId ?? null)) throw new Error("This booking request belongs to a different attendee or account.");
+      if (classRecord?.id !== alreadyCreated.classId) throw new Error("This booking request belongs to a different class.");
+      assertExpectedPrice(input, alreadyCreated);
       if (["PAYMENT_FAILED", "EXPIRED"].includes(alreadyCreated.status)) {
-        const [classRecord] = await tx.select().from(classes).where(eq(classes.id, alreadyCreated.classId)).for("update").limit(1);
-        if (!classRecord || !(admin ? ["PUBLISHED", "SOLD_OUT", "COMPLETED"] : ["PUBLISHED", "SOLD_OUT"]).includes(classRecord.status)) throw new Error("This class is no longer available for booking.");
+        if (!(admin ? ["PUBLISHED", "SOLD_OUT", "COMPLETED"] : ["PUBLISHED", "SOLD_OUT"]).includes(classRecord.status)) throw new Error("This class is no longer available for booking.");
         const now = new Date();
         if (!admin && now < classRecord.bookingOpensAt) throw new Error("Booking has not opened for this class yet.");
         if (!admin && (now > classRecord.bookingClosesAt || now >= classRecord.startAt)) throw new Error("Booking is closed for this class.");
@@ -99,6 +125,12 @@ export async function createBookingCheckout(input: CreateCheckoutInput, admin?: 
           const seats = await activeSeatCount(tx, classRecord.id);
           if (!classRecord.seatCapacity || seats >= classRecord.seatCapacity) throw new Error("This class has sold out. Please return to the class page for the latest availability.");
         }
+        if (input.promo || alreadyCreated.promoCodeId) {
+          const price = await getCheckoutPrice(tx, classRecord, input, now);
+          if (price.promoCodeId !== alreadyCreated.promoCodeId || price.amountSnapshot !== alreadyCreated.amountSnapshot || price.currencySnapshot !== alreadyCreated.currencySnapshot || price.discountMinorUnits !== alreadyCreated.discountMinorUnits) {
+            throw new BookingQuoteError("The booking price or promo has changed. Refresh the booking page and review the latest total before continuing.");
+          }
+        }
         const reservationExpiresAt = new Date(now.getTime() + 31 * 60 * 1000);
         const [reopened] = await tx.update(bookings).set({ status: "PENDING_PAYMENT", stripeCheckoutSessionId: null, stripePaymentIntentId: null, seatReservationExpiresAt: reservationExpiresAt, expiredAt: null, updatedAt: now }).where(eq(bookings.id, alreadyCreated.id)).returning();
         await tx.update(payments).set({ status: "PENDING", stripeCheckoutSessionId: null, stripePaymentIntentId: null, updatedAt: now }).where(eq(payments.bookingId, alreadyCreated.id));
@@ -108,7 +140,6 @@ export async function createBookingCheckout(input: CreateCheckoutInput, admin?: 
       return alreadyCreated;
     }
 
-    const [classRecord] = await tx.select().from(classes).where(eq(classes.slug, input.classSlug)).for("update").limit(1);
     if (!classRecord) throw new Error("This class is no longer available.");
     if (!(admin ? ["PUBLISHED", "SOLD_OUT", "COMPLETED"] : ["PUBLISHED", "SOLD_OUT"]).includes(classRecord.status)) throw new Error("This class is no longer available for booking.");
     const now = new Date();
@@ -129,6 +160,8 @@ export async function createBookingCheckout(input: CreateCheckoutInput, admin?: 
     const identifier = input.professionalIdentifier?.trim() || null;
     const identifierValidation = professionalIdentifierSchema(classRecord.country, classRecord.professionalIdentifierRequired).safeParse(identifier ?? "");
     if (!identifierValidation.success) throw new Error(identifierValidation.error.issues[0]?.message ?? "Enter the professional identifier in the requested format.");
+    const price = await getCheckoutPrice(tx, classRecord, input, now);
+    const confirmed = price.amountSnapshot === 0 || admin?.mode === "VERIFIED";
     const [booking] = await tx
       .insert(bookings)
       .values({
@@ -140,16 +173,15 @@ export async function createBookingCheckout(input: CreateCheckoutInput, admin?: 
         professionalIdentifierType: classRecord.professionalIdentifierRequired ? country.identifierType : identifier ? country.identifierType : null,
         professionalIdentifier: identifier,
         createAccountRequested,
-        status: classRecord.priceMinorUnits === 0 || admin?.mode === "VERIFIED" ? "CONFIRMED" : "PENDING_PAYMENT",
-        amountSnapshot: classRecord.priceMinorUnits,
-        currencySnapshot: classRecord.currency,
+        ...price,
+        status: confirmed ? "CONFIRMED" : "PENDING_PAYMENT",
         classTitleSnapshot: classRecord.title,
         cpdUnitTypeSnapshot: classRecord.cpdUnitType,
         cpdAmountSnapshot: classRecord.cpdUnitAmount,
         timezoneSnapshot: classRecord.timezone,
-        seatReservationExpiresAt: classRecord.priceMinorUnits === 0 || admin?.mode === "VERIFIED" ? null : reservationExpiresAt,
-        confirmedAt: classRecord.priceMinorUnits === 0 || admin?.mode === "VERIFIED" ? now : null,
-        paidAt: classRecord.priceMinorUnits > 0 && admin?.mode === "VERIFIED" ? now : null,
+        seatReservationExpiresAt: confirmed ? null : reservationExpiresAt,
+        confirmedAt: confirmed ? now : null,
+        paidAt: price.amountSnapshot > 0 && admin?.mode === "VERIFIED" ? now : null,
         termsAcceptedAt: input.termsAcceptedAt,
         refundPolicyAcceptedAt: input.refundPolicyAcceptedAt,
         idempotencyKey: input.idempotencyKey,
@@ -197,6 +229,17 @@ export async function createBookingCheckout(input: CreateCheckoutInput, admin?: 
   let stripeSession: import("stripe").default.Checkout.Session | undefined;
   try {
     const env = getServerEnv();
+    const metadata = {
+      ...stripeIntegrationMetadata,
+      bookingId: created.id,
+      classId: created.classId,
+      ...(created.promoCodeSnapshot && created.promoCodeId ? {
+        promoCode: created.promoCodeSnapshot,
+        promoCodeId: created.promoCodeId,
+        discountMinorUnits: String(created.discountMinorUnits),
+        originalAmountMinorUnits: String(created.amountSnapshot + created.discountMinorUnits),
+      } : {}),
+    };
     stripeSession = await getStripe().checkout.sessions.create(
       {
         mode: "payment",
@@ -205,15 +248,19 @@ export async function createBookingCheckout(input: CreateCheckoutInput, admin?: 
             price_data: {
               currency: created.currencySnapshot.toLowerCase(),
               unit_amount: created.amountSnapshot,
-              product_data: { name: created.classTitleSnapshot, metadata: { classId: created.classId } },
+              product_data: {
+                name: created.classTitleSnapshot,
+                metadata: { classId: created.classId },
+                ...(created.discountMinorUnits > 0 ? { description: `Includes a ${formatMoney(created.discountMinorUnits, created.currencySnapshot)} promo discount.` } : {}),
+              },
             },
             quantity: 1,
           },
         ],
         customer_email: created.email,
         client_reference_id: created.id,
-        metadata: { ...stripeIntegrationMetadata, bookingId: created.id, classId: created.classId },
-        payment_intent_data: { metadata: { ...stripeIntegrationMetadata, bookingId: created.id, classId: created.classId } },
+        metadata,
+        payment_intent_data: { metadata },
         success_url: `${env.APP_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${env.APP_URL}/booking/cancelled?booking=${created.id}`,
         expires_at: Math.floor((created.seatReservationExpiresAt ?? new Date(Date.now() + 31 * 60 * 1000)).getTime() / 1000),

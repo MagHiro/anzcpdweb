@@ -29,6 +29,7 @@ export default async function AdminBookingDetailPage({ params }: { params: Promi
         <div><dt>Country</dt><dd>{row.booking.country === "AU" ? "Australia" : "New Zealand"}</dd></div>
         <div><dt>Professional identifier</dt><dd>{row.booking.professionalIdentifier ? `${row.booking.professionalIdentifierType ?? ""} ${row.booking.professionalIdentifier}`.trim() : "Not supplied"}</dd></div>
         <div><dt>Price at booking</dt><dd>{formatMoney(row.booking.amountSnapshot, row.booking.currencySnapshot)}</dd></div>
+        {row.booking.promoCodeSnapshot && <div><dt>Promo code</dt><dd>{row.booking.promoCodeSnapshot} · {formatMoney(row.booking.discountMinorUnits, row.booking.currencySnapshot)} off</dd></div>}
         <div><dt>Created</dt><dd>{formatDateTime(row.booking.createdAt, row.booking.timezoneSnapshot)}<span className="booking-timezone">{row.booking.timezoneSnapshot}</span></dd></div>
       </dl></section>
       <section className="admin-detail-panel"><h2>Payment</h2>{payment ? <><div className="mt-5"><StatusBadge status={payment.status} /></div><dl className="booking-payment-totals"><div><dt>Captured</dt><dd>{formatMoney(payment.amountCaptured, payment.currency)}</dd></div><div><dt>Refunded</dt><dd>{formatMoney(payment.amountRefunded, payment.currency)}</dd></div></dl></> : <p className="booking-payment-empty">No payment record for this booking.</p>}
