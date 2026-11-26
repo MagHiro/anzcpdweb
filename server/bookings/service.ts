@@ -46,6 +46,7 @@ function assertExpectedPrice(input: CreateCheckoutInput, price: { amountSnapshot
 }
 
 async function getCheckoutPrice(tx: Transaction, activity: typeof classes.$inferSelect, input: CreateCheckoutInput, now: Date) {
+  // The class lock serializes the limit check with the booking and payment inserts.
   const promo = input.promo ? await getBookingPromo(tx, activity, input.promo, now) : null;
   if (input.promo && !promo) throw new BookingQuoteError(unavailablePromo);
   const price = {
@@ -363,6 +364,18 @@ export async function markCheckoutCompleted(input: { session: import("stripe").d
   return result;
 }
 
+function matchesCheckoutAttempt(booking: typeof bookings.$inferSelect, session: import("stripe").default.Checkout.Session) {
+  if (booking.stripeCheckoutSessionId) return session.id === booking.stripeCheckoutSessionId;
+  // An ambiguous Stripe response can leave the reservation without a session ID.
+  return Boolean(booking.promoCodeId && booking.seatReservationExpiresAt
+    && session.expires_at === Math.floor(booking.seatReservationExpiresAt.getTime() / 1000));
+}
+
+async function releaseCancelledPromoPayment(tx: Transaction, bookingId: string) {
+  await tx.update(payments).set({ status: "FAILED", updatedAt: new Date() })
+    .where(and(eq(payments.bookingId, bookingId), inArray(payments.status, ["PENDING", "PROCESSING"]), eq(payments.amountCaptured, 0)));
+}
+
 export async function markCheckoutExpired(session: import("stripe").default.Checkout.Session) {
   const bookingId = session.metadata?.bookingId ?? session.client_reference_id;
   if (!bookingId) return;
@@ -370,7 +383,9 @@ export async function markCheckoutExpired(session: import("stripe").default.Chec
   const updated = await db.transaction(async (tx) => {
     await lockBookingClass(tx, bookingId);
     const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update").limit(1);
-    if (!booking || !["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status) || session.id !== booking.stripeCheckoutSessionId) return null;
+    if (!booking || !matchesCheckoutAttempt(booking, session)) return null;
+    if (booking.status === "CANCELLED" && booking.promoCodeId) await releaseCancelledPromoPayment(tx, booking.id);
+    if (!["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status)) return null;
     assertBookingTransition(booking.status, "EXPIRED");
     const now = new Date();
     const [expired] = await tx.update(bookings).set({ status: "EXPIRED", expiredAt: now, seatReservationExpiresAt: null, updatedAt: now }).where(eq(bookings.id, booking.id)).returning();
@@ -388,7 +403,9 @@ export async function markCheckoutPaymentFailed(session: import("stripe").defaul
   return db.transaction(async (tx) => {
     await lockBookingClass(tx, bookingId);
     const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update").limit(1);
-    if (!booking || !["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status) || session.id !== booking.stripeCheckoutSessionId) return booking ?? null;
+    if (!booking || !matchesCheckoutAttempt(booking, session)) return booking ?? null;
+    if (booking.status === "CANCELLED" && booking.promoCodeId) await releaseCancelledPromoPayment(tx, booking.id);
+    if (!["PENDING_PAYMENT", "PAYMENT_PROCESSING"].includes(booking.status)) return booking;
     assertBookingTransition(booking.status, "PAYMENT_FAILED");
     const now = new Date();
     const [updated] = await tx.update(bookings).set({ status: "PAYMENT_FAILED", seatReservationExpiresAt: null, updatedAt: now }).where(eq(bookings.id, booking.id)).returning();
@@ -435,6 +452,7 @@ export async function cancelPendingBooking(userId: string, bookingId: string) {
   const [candidate] = await db.select().from(bookings).where(and(eq(bookings.id, bookingId), eq(bookings.userId, userId))).limit(1);
   if (!candidate) throw new Error("Booking not found.");
   if (candidate.status !== "PENDING_PAYMENT") throw new Error("Only an unpaid booking can be cancelled here. Processing payments must be reconciled first.");
+  if (candidate.promoCodeId && !candidate.stripeCheckoutSessionId) throw new Error("This booking is already being processed. Wait for the checkout result before cancelling.");
   if (candidate.stripeCheckoutSessionId) {
     const checkout = await getStripe().checkout.sessions.retrieve(candidate.stripeCheckoutSessionId);
     if (checkout.status === "complete") throw new Error("Checkout has completed. Wait for the payment result before cancelling.");
@@ -445,6 +463,9 @@ export async function cancelPendingBooking(userId: string, bookingId: string) {
     const [booking] = await tx.select().from(bookings).where(and(eq(bookings.id, bookingId), eq(bookings.userId, userId))).for("update").limit(1);
     if (!booking) throw new Error("Booking not found.");
     if (!["PENDING_PAYMENT", "EXPIRED"].includes(booking.status)) throw new Error("Only an unpaid booking can be cancelled here.");
+    if (booking.promoCodeId && booking.status === "PENDING_PAYMENT" && booking.stripeCheckoutSessionId !== candidate.stripeCheckoutSessionId) {
+      throw new Error("This booking is already being processed. Wait for the checkout result before cancelling.");
+    }
     assertBookingTransition(booking.status, "CANCELLED");
     const [updated] = await tx.update(bookings).set({ status: "CANCELLED", cancelledAt: new Date(), seatReservationExpiresAt: null, updatedAt: new Date() }).where(eq(bookings.id, booking.id)).returning();
     await tx.update(payments).set({ status: "FAILED", updatedAt: new Date() }).where(and(eq(payments.bookingId, booking.id), eq(payments.status, "PENDING")));

@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, getTableColumns } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { AdminClassNav } from "@/components/admin-class-nav";
 import { AdminPageHeading } from "@/components/admin-page-heading";
@@ -9,6 +9,7 @@ import { getServerEnv } from "@/lib/env";
 import { uuidSchema } from "@/lib/validation";
 import { getAdminClassById } from "@/server/catalogue/queries";
 import { getAdminSessionOrNull } from "@/server/auth/session";
+import { promoUsageCount } from "@/server/bookings/promos";
 
 export default async function ClassPromosPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,7 +18,8 @@ export default async function ClassPromosPage({ params }: { params: Promise<{ id
   const row = await getAdminClassById(id);
   if (!row) notFound();
   const { slug, title, currency, timezone, promoMode } = row.class;
-  const promos = await getDb().select().from(classPromoCodes).where(eq(classPromoCodes.classId, id)).orderBy(desc(classPromoCodes.createdAt));
+  const promos = await getDb().select({ ...getTableColumns(classPromoCodes), usageCount: promoUsageCount })
+    .from(classPromoCodes).where(eq(classPromoCodes.classId, id)).orderBy(desc(classPromoCodes.createdAt));
   const origin = getServerEnv().APP_URL;
 
   return <div>
@@ -37,6 +39,9 @@ export default async function ClassPromosPage({ params }: { params: Promise<{ id
         link.searchParams.set("promo", promo.linkToken);
         return <section className="admin-detail-panel" key={promo.id}>
           <h2>{promo.code}</h2>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            {promo.usageCount}{promo.maxUses !== null ? ` of ${promo.maxUses}` : ""} uses booked or reserved
+          </p>
           <ClassPromoForm classId={id} currency={currency} timezone={timezone} promo={promo} link={link.toString()} />
         </section>;
       })}

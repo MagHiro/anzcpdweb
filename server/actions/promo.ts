@@ -38,14 +38,20 @@ const promoFormSchema = z.object({
   validFrom: z.string(),
   validUntil: z.string(),
   isActive: z.enum(["on"]).optional(),
+  maxUses: z.union([z.literal("").transform(() => null), z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(2_147_483_647))]),
 });
 
 export async function saveClassPromoAction(_state: AdminActionState, formData: FormData): Promise<AdminActionState> {
   const session = await requireAdminSession();
   const raw = toFormObject(formData);
-  const parsed = promoFormSchema.safeParse({ ...raw, discount: { type: raw.discountType, value: raw.discountValue } });
-  if (!parsed.success) return { ok: false, message: "Enter a valid code and discount: 1–100 for a percentage or a positive amount with up to two decimal places." };
-  const { classId, id, code, discount, isActive } = parsed.data;
+  const parsed = promoFormSchema.safeParse({ ...raw, maxUses: raw.maxUses?.trim() ?? "", discount: { type: raw.discountType, value: raw.discountValue } });
+  if (!parsed.success) {
+    if (parsed.error.issues.some(issue => issue.path[0] === "maxUses")) {
+      return { ok: false, fieldErrors: { maxUses: "Enter a positive whole number up to 2,147,483,647, or leave blank for unlimited uses." } };
+    }
+    return { ok: false, message: "Enter a valid code and discount: 1–100 for a percentage or a positive amount with up to two decimal places." };
+  }
+  const { classId, id, code, discount, isActive, maxUses } = parsed.data;
 
   const result = await getDb().transaction(async tx => {
     // Serialize changes to promo eligibility with new checkout reservations.
@@ -61,7 +67,7 @@ export async function saveClassPromoAction(_state: AdminActionState, formData: F
     }
     if (validUntil <= validFrom) return { ok: false, message: "The end time must be after the start time." };
 
-    const values = { discountType: discount.type, discountValue: discount.value, validFrom, validUntil, isActive: isActive === "on", updatedAt: new Date() };
+    const values = { discountType: discount.type, discountValue: discount.value, validFrom, validUntil, isActive: isActive === "on", maxUses, updatedAt: new Date() };
     const [saved] = id
       ? await tx.update(classPromoCodes).set(values).where(and(eq(classPromoCodes.id, id), eq(classPromoCodes.classId, classId))).returning({ id: classPromoCodes.id })
       : await tx.insert(classPromoCodes).values({ ...values, classId, code })

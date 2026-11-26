@@ -7,12 +7,12 @@ import { accountClaimTokens, bookings, categories, classes, classPromoCodes, cou
 import { issuePaymentReceipt } from "@/server/payments/receipts";
 import { receiptEmailAttachments, type EmailMessage } from "@/server/email/service";
 import { completeAccountLink, createAccountToken } from "@/server/auth/tokens";
-import { createBookingCheckout, markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
+import { cancelBookingByAdmin, createBookingCheckout, markCheckoutCompleted, markCheckoutExpired, markCheckoutPaymentFailed } from "@/server/bookings/service";
 import { cancelClass, deleteSourceReference, publishClass, replaceClassSources, saveSourceReference } from "@/server/catalogue/service";
 import { syncPaymentRefundTotals, syncRefundFromStripe } from "@/server/payments/refunds";
 import { getPublishedClassBySlug, getPublishedClasses } from "@/server/catalogue/queries";
 import { makePublicBookingReference } from "@/lib/utils";
-import { getBookingPromo } from "@/server/bookings/promos";
+import { getBookingPromo, promoUsageCount } from "@/server/bookings/promos";
 import * as stripe from "@/server/payments/stripe";
 
 describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests", () => {
@@ -155,6 +155,60 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     }
   });
 
+  it("shares the promo cap between links and manual codes and serializes the last use", async () => {
+    const { record } = await fixture("CANCELLED");
+    const [activity] = await db.update(classes).set({ promoMode: "CODE_AND_LINK", unlimitedCapacity: true }).where(eq(classes.id, record.id)).returning();
+    const [promo] = await db.insert(classPromoCodes).values({
+      classId: activity.id, code: "LAST25", discountType: "PERCENT", discountValue: 25, maxUses: 1,
+      validFrom: activity.bookingOpensAt, validUntil: activity.bookingClosesAt,
+    }).returning();
+    const link = { linkToken: promo.linkToken };
+    const code = { code: promo.code };
+    const base = {
+      classSlug: activity.slug, fullName: "Promo attendee", createAccountRequested: false,
+      termsAcceptedAt: new Date(), refundPolicyAcceptedAt: new Date(),
+    };
+    const inputs = [link, code].map(source => ({
+      ...base, promo: source, email: `limit-${randomUUID()}@example.com`, idempotencyKey: randomUUID(),
+    }));
+    tokenEmails.push(...inputs.map(input => input.email));
+    const createSession = vi.fn(async () => ({ id: `cs_${randomUUID()}`, url: "https://checkout.stripe.com/test", status: "open" }));
+    const retrieveSession = vi.fn(async (id: string) => ({ id, url: "https://checkout.stripe.com/test", status: "open" }));
+    const stripeMock = vi.spyOn(stripe, "getStripe").mockReturnValue({ checkout: { sessions: { create: createSession, retrieve: retrieveSession } } } as unknown as Stripe);
+    try {
+      const attempts = await Promise.allSettled(inputs.map(input => createBookingCheckout(input)));
+      const winnerIndex = attempts.findIndex(attempt => attempt.status === "fulfilled");
+      const winner = attempts[winnerIndex];
+      if (winner?.status !== "fulfilled") throw new Error("One checkout should have reserved the promo.");
+      const booking = winner.value.booking;
+      bookingIds.push(booking.id);
+      expect(attempts[1 - winnerIndex]).toMatchObject({ status: "rejected", reason: expect.objectContaining({ message: expect.stringContaining("promo is unavailable") }) });
+      expect(createSession).toHaveBeenCalledTimes(1);
+      await expect(createBookingCheckout(inputs[winnerIndex])).resolves.toMatchObject({ reused: true, booking: { id: booking.id } });
+      expect(createSession).toHaveBeenCalledTimes(1);
+      await expect(getBookingPromo(db, activity, link)).resolves.toBeNull();
+      await expect(getBookingPromo(db, activity, code)).resolves.toBeNull();
+      const [usage] = await db.select({ count: promoUsageCount }).from(classPromoCodes).where(eq(classPromoCodes.id, promo.id));
+      expect(usage.count).toBe(1);
+
+      await cancelBookingByAdmin(booking.id);
+      await expect(getBookingPromo(db, activity, link)).resolves.toBeNull();
+      if (!booking.stripeCheckoutSessionId) throw new Error("Expected a Stripe session for the reserved booking.");
+      await markCheckoutExpired({ id: booking.stripeCheckoutSessionId, metadata: { bookingId: booking.id } } as unknown as Stripe.Checkout.Session);
+      await expect(getBookingPromo(db, activity, code)).resolves.toMatchObject({ quote: { amount: 7500 } });
+
+      const replacement = await createBookingCheckout(inputs[1 - winnerIndex]);
+      bookingIds.push(replacement.booking.id);
+      if (!replacement.booking.stripeCheckoutSessionId) throw new Error("Expected a Stripe session for the replacement booking.");
+      const paidSession = { id: replacement.booking.stripeCheckoutSessionId, metadata: { bookingId: replacement.booking.id }, amount_total: 7500, currency: "aud" } as unknown as Stripe.Checkout.Session;
+      await markCheckoutCompleted({ session: paidSession, paymentSucceeded: true });
+      await db.update(payments).set({ status: "REFUNDED", amountRefunded: 7500 }).where(eq(payments.bookingId, replacement.booking.id));
+      await expect(getBookingPromo(db, activity, link)).resolves.toBeNull();
+    } finally {
+      stripeMock.mockRestore();
+    }
+  });
+
   it("records late capture without overbooking a reused seat", async () => {
     const { record, booking, payment, session } = await fixture();
     const [other] = await db.insert(bookings).values({ classId: record.id, fullName: "Other", email: "other@example.com", country: "AU", status: "CONFIRMED", amountSnapshot: 10000, currencySnapshot: "AUD", classTitleSnapshot: record.title, timezoneSnapshot: record.timezone, termsAcceptedAt: new Date(), refundPolicyAcceptedAt: new Date(), idempotencyKey: randomUUID() }).returning();
@@ -290,7 +344,10 @@ describe.skipIf(!process.env.DATABASE_URL)("financial service regression tests",
     }
     if (classIds.length) await db.delete(classes).where(inArray(classes.id, classIds));
     if (categoryId) await db.delete(categories).where(eq(categories.id, categoryId));
-    if (tokenEmails.length) await db.delete(accountClaimTokens).where(inArray(accountClaimTokens.email, tokenEmails));
+    if (tokenEmails.length) {
+      await db.delete(accountClaimTokens).where(inArray(accountClaimTokens.email, tokenEmails));
+      await db.delete(emailOutbox).where(inArray(emailOutbox.recipientEmail, tokenEmails));
+    }
     if (userIds.length) await db.delete(user).where(inArray(user.id, userIds));
   });
 });

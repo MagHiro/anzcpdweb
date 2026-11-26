@@ -264,6 +264,7 @@ export const classPromoCodes = pgTable("class_promo_codes", {
   linkToken: uuid("link_token").notNull().defaultRandom(),
   discountType: promoDiscountTypeEnum("discount_type").notNull(),
   discountValue: integer("discount_value").notNull(),
+  maxUses: integer("max_uses"),
   isActive: boolean("is_active").notNull().default(true),
   validFrom: timestamp("valid_from", { withTimezone: true }).notNull(),
   validUntil: timestamp("valid_until", { withTimezone: true }).notNull(),
@@ -273,6 +274,7 @@ export const classPromoCodes = pgTable("class_promo_codes", {
   uniqueIndex("class_promo_codes_link_token_unique").on(table.linkToken),
   check("class_promo_codes_validity", sql`${table.validUntil} > ${table.validFrom}`),
   check("class_promo_codes_discount", sql`${table.discountValue} > 0 AND (${table.discountType} <> 'PERCENT' OR ${table.discountValue} <= 100)`),
+  check("class_promo_codes_max_uses_positive", sql`${table.maxUses} > 0`),
 ]);
 
 export const classMedia = pgTable(
@@ -354,6 +356,7 @@ export const bookings = pgTable(
     uniqueIndex("bookings_checkout_session_unique").on(table.stripeCheckoutSessionId),
     uniqueIndex("bookings_payment_intent_unique").on(table.stripePaymentIntentId),
     index("bookings_class_status_idx").on(table.classId, table.status),
+    index("bookings_promo_code_idx").on(table.promoCodeId).where(sql`${table.promoCodeId} IS NOT NULL`),
     index("bookings_user_created_idx").on(table.userId, table.createdAt),
     index("bookings_email_idx").on(table.email),
     check("bookings_amount_non_negative", sql`${table.amountSnapshot} >= 0`),

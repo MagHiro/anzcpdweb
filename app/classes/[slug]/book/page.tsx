@@ -38,7 +38,7 @@ export default async function BookClassPage({ params, searchParams }: {
     currency: record.currency,
     professionalIdentifierRequired: record.professionalIdentifierRequired,
   };
-  return <Section className="booking-page"><Container className="booking-container">
+  return <Section className="booking-page"><Container>
     <header className="booking-heading">
       {back}
       <p className="booking-kicker">Class registration</p>

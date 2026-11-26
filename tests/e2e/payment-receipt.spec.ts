@@ -23,13 +23,14 @@ test("promo pricing reaches booking review and the private printable receipt", a
   try {
     await page.goto(`/classes/${activity.slug}/book?promo=${promo.linkToken}`);
     const summary = page.getByRole("complementary", { name: activity.title });
-    for (const width of [320, 768, 1440]) {
+    for (const width of [320, 768, 1600]) {
       await page.setViewportSize({ width, height: 900 });
       await expect(summary.getByText("NZD 199.00", { exact: true })).toBeVisible();
       await expect(summary.getByText("−NZD 50.00", { exact: true })).toBeVisible();
       await expect(summary.getByText("NZD 149.00", { exact: true })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
+    await expect(page.locator(".booking-page .page-container")).toHaveCSS("max-width", "1440px");
     await expect(page.getByText(promo.code)).toHaveCount(0);
     await page.getByRole("textbox", { name: "Full name", exact: true }).fill(booking.fullName);
     await page.getByRole("textbox", { name: "Email address", exact: true }).fill(booking.email);

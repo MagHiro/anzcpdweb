@@ -66,6 +66,9 @@ export function ClassPromoForm({ classId, currency, timezone, promo, link }: {
     <Field label={`Valid until (${timezone})`} required>
       <TextInput name="validUntil" type="datetime-local" defaultValue={promo && toDateTimeLocalValue(promo.validUntil, timezone)} required />
     </Field>
+    <Field label="Maximum uses" hint="Leave blank for unlimited. Pending checkouts reserve a use; completed bookings count even if refunded." error={state.fieldErrors?.maxUses}>
+      <TextInput name="maxUses" type="number" inputMode="numeric" min={1} max={2_147_483_647} step={1} placeholder="Unlimited" defaultValue={promo?.maxUses ?? ""} />
+    </Field>
     {link && <div className="flex flex-wrap items-end gap-3 sm:col-span-2">
       <Field label="Booking link" className="min-w-0 flex-1">
         <TextInput value={link} readOnly onFocus={event => event.currentTarget.select()} />
